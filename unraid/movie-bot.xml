@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Container version="2">
+  <Name>movie-bot</Name>
+  <Repository>ghcr.io/gugahoi/movie-bot:latest</Repository>
+  <Registry>https://ghcr.io/v2/gugahoi/movie-bot/</Registry>
+  <Branch>
+    <Tag>latest</Tag>
+    <TagDescription>Latest stable release</TagDescription>
+  </Branch>
+  <Network>bridge</Network>
+  <Shell>sh</Shell>
+  <Privileged>false</Privileged>
+  <Support>https://github.com/gugahoi/movie-bot/issues</Support>
+  <Project>https://github.com/gugahoi/movie-bot</Project>
+  <Overview>Slack bot for movie/TV show requests with Radarr/Sonarr approval workflow. Users run /movie or /tv commands in Slack, select from search results, and approvers can approve or reject requests. Uses Socket Mode — no ports required.</Overview>
+  <Category>Tools: MediaApp:Other</Category>
+  <WebUI/>
+  <Icon>https://raw.githubusercontent.com/gugahoi/movie-bot/main/unraid/movie-bot-icon.png</Icon>
+  <ExtraParams/>
+  <DonateText/>
+  <DonateLink/>
+  <DonateImg/>
+  <Description>Slack bot for movie/TV show requests with Radarr/Sonarr approval workflow. Uses Socket Mode — no ports required.</Description>
+  <Config Name="Data Directory" Target="/app/data" Default="/mnt/user/appdata/movie-bot" Mode="rw" Description="Persistent storage for SQLite database" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/movie-bot</Config>
+  <Config Name="Slack Bot Token" Target="SLACK_BOT_TOKEN" Default="" Mode="" Description="Bot User OAuth Token (starts with xoxb-)" Type="Variable" Display="always" Required="true" Mask="true"/>
+  <Config Name="Slack App Token" Target="SLACK_APP_TOKEN" Default="" Mode="" Description="App-Level Token for Socket Mode (starts with xapp-)" Type="Variable" Display="always" Required="true" Mask="true"/>
+  <Config Name="Slack Request Channel ID" Target="SLACK_REQUEST_CHANNEL_ID" Default="" Mode="" Description="Channel ID where users make requests (starts with C)" Type="Variable" Display="always" Required="true" Mask="false"/>
+  <Config Name="Slack Approval Channel ID" Target="SLACK_APPROVAL_CHANNEL_ID" Default="" Mode="" Description="Channel ID where approval messages appear (starts with C)" Type="Variable" Display="always" Required="true" Mask="false"/>
+  <Config Name="Approver Slack IDs" Target="APPROVER_SLACK_IDS" Default="" Mode="" Description="Comma-separated Slack user IDs who can approve requests (e.g. U123ABC,U456DEF)" Type="Variable" Display="always" Required="true" Mask="false"/>
+  <Config Name="Radarr URL" Target="RADARR_URL" Default="" Mode="" Description="Radarr base URL (e.g. http://192.168.1.100:7878)" Type="Variable" Display="always" Required="true" Mask="false"/>
+  <Config Name="Radarr API Key" Target="RADARR_API_KEY" Default="" Mode="" Description="Radarr API key from Settings > General" Type="Variable" Display="always" Required="true" Mask="true"/>
+  <Config Name="Radarr Quality Profile ID" Target="RADARR_QUALITY_PROFILE_ID" Default="" Mode="" Description="Numeric ID of the Radarr quality profile (get from /api/v3/qualityProfile)" Type="Variable" Display="always" Required="true" Mask="false"/>
+  <Config Name="Radarr Root Folder Path" Target="RADARR_ROOT_FOLDER_PATH" Default="/movies" Mode="" Description="Root folder path configured in Radarr (e.g. /movies)" Type="Variable" Display="always" Required="true" Mask="false"/>
+  <Config Name="DB Path" Target="DB_PATH" Default="/app/data/requests.db" Mode="" Description="SQLite database file path inside the container" Type="Variable" Display="advanced-hide" Required="false" Mask="false">/app/data/requests.db</Config>
+  <Config Name="PUID" Target="PUID" Default="99" Mode="" Description="User ID for file permissions" Type="Variable" Display="advanced" Required="false" Mask="false">99</Config>
+  <Config Name="PGID" Target="PGID" Default="100" Mode="" Description="Group ID for file permissions" Type="Variable" Display="advanced" Required="false" Mask="false">100</Config>
+  <Config Name="Timezone" Target="TZ" Default="America/New_York" Mode="" Description="Container timezone (e.g. America/New_York, Europe/London)" Type="Variable" Display="advanced" Required="false" Mask="false"/>
+  <Config Name="Sonarr URL" Target="SONARR_URL" Default="" Mode="" Description="[Optional — set all 4 Sonarr fields or none] Sonarr base URL (e.g. http://192.168.1.100:8989)" Type="Variable" Display="advanced" Required="false" Mask="false"/>
+  <Config Name="Sonarr API Key" Target="SONARR_API_KEY" Default="" Mode="" Description="[Optional — set all 4 Sonarr fields or none] Sonarr API key from Settings > General" Type="Variable" Display="advanced" Required="false" Mask="true"/>
+  <Config Name="Sonarr Quality Profile ID" Target="SONARR_QUALITY_PROFILE_ID" Default="" Mode="" Description="[Optional — set all 4 Sonarr fields or none] Numeric ID of the Sonarr quality profile" Type="Variable" Display="advanced" Required="false" Mask="false"/>
+  <Config Name="Sonarr Root Folder Path" Target="SONARR_ROOT_FOLDER_PATH" Default="/tv" Mode="" Description="[Optional — set all 4 Sonarr fields or none] Root folder path configured in Sonarr (e.g. /tv)" Type="Variable" Display="advanced" Required="false" Mask="false"/>
+</Container>

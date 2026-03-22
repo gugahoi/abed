@@ -2,11 +2,9 @@
 FROM oven/bun:1 AS builder
 WORKDIR /app
 
-# Copy package files and install dependencies
 COPY package.json bun.lock* ./
 RUN bun install --frozen-lockfile
 
-# Copy source
 COPY src/ ./src/
 COPY tsconfig.json ./
 
@@ -14,23 +12,25 @@ COPY tsconfig.json ./
 FROM oven/bun:1-alpine AS runtime
 WORKDIR /app
 
-# Create non-root user
-RUN addgroup --system --gid 1001 moviebot && \
-    adduser --system --uid 1001 --ingroup moviebot moviebot
+LABEL org.opencontainers.image.source="https://github.com/gugahoi/movie-bot"
+LABEL org.opencontainers.image.description="Slack bot for movie/TV requests with Radarr/Sonarr approval workflow"
+LABEL org.opencontainers.image.licenses="MIT"
 
-# Create data directory for SQLite
-RUN mkdir -p /app/data && chown moviebot:moviebot /app/data
+RUN apk add --no-cache su-exec && \
+    addgroup -g 1001 -S moviebot && \
+    adduser -u 1001 -G moviebot -S -D -H -h /app moviebot && \
+    mkdir -p /app/data && chown moviebot:moviebot /app/data
 
-# Copy from builder
-COPY --from=builder --chown=moviebot:moviebot /app/node_modules ./node_modules
-COPY --from=builder --chown=moviebot:moviebot /app/src ./src
-COPY --from=builder --chown=moviebot:moviebot /app/package.json ./package.json
-COPY --from=builder --chown=moviebot:moviebot /app/tsconfig.json ./tsconfig.json
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/src ./src
+COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/tsconfig.json ./tsconfig.json
 
-USER moviebot
+COPY docker-entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
-# Health: check process is running
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
   CMD pgrep -f "bun run" || exit 1
 
+ENTRYPOINT ["docker-entrypoint.sh"]
 CMD ["bun", "run", "src/index.ts"]
