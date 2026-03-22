@@ -8,11 +8,13 @@ import {
   buildTvApprovalRequestMessage,
   buildTvApprovedMessage,
   buildTvRejectedMessage,
+  buildMyRequestsMessage,
   ACTION_IDS,
   BLOCK_IDS,
 } from '../../src/slack/messages/index';
 import type { RadarrSearchResult } from '../../src/radarr/types';
 import type { SonarrSearchResult } from '../../src/sonarr/types';
+import type { MyRequestItem } from '../../src/slack/messages/index';
 
 const mockMovie: RadarrSearchResult = {
   title: 'The Batman',
@@ -253,5 +255,90 @@ describe('buildTvRejectedMessage', () => {
     const blocks = buildTvRejectedMessage({ title: 'Breaking Bad', year: 2008 }, 'U_REQ', 'U_APP', 'Already watched');
     const firstBlock = blocks[0] as any;
     expect(firstBlock.text.text).toContain('Reason: Already watched');
+  });
+});
+
+describe('buildMyRequestsMessage', () => {
+  it('returns no-requests message when empty array', () => {
+    const blocks = buildMyRequestsMessage([]);
+    expect(blocks).toHaveLength(1);
+    expect((blocks[0] as any).text.text).toContain("haven't made any requests");
+  });
+
+  it('returns header + divider + item blocks for requests', () => {
+    const requests: MyRequestItem[] = [
+      { type: 'movie', title: 'The Batman', year: 2022, status: 'approved', createdAt: '2024-01-15T10:30:00' },
+    ];
+    const blocks = buildMyRequestsMessage(requests);
+    expect(blocks).toHaveLength(3); // header + divider + 1 item
+    expect(blocks[0]!.type).toBe('section');
+    expect(blocks[1]!.type).toBe('divider');
+    expect(blocks[2]!.type).toBe('section');
+  });
+
+  it('shows movie emoji for movie requests', () => {
+    const blocks = buildMyRequestsMessage([
+      { type: 'movie', title: 'Dune', year: 2021, status: 'pending', createdAt: '2024-01-15T10:30:00' },
+    ]);
+    const itemBlock = blocks[2] as any;
+    expect(itemBlock.text.text).toContain(':clapper:');
+  });
+
+  it('shows TV emoji for tv requests', () => {
+    const blocks = buildMyRequestsMessage([
+      { type: 'tv', title: 'Breaking Bad', year: 2008, status: 'approved', createdAt: '2024-01-15T10:30:00' },
+    ]);
+    const itemBlock = blocks[2] as any;
+    expect(itemBlock.text.text).toContain(':tv:');
+  });
+
+  it('renders all 5 status types with correct emoji', () => {
+    const statuses = [
+      { status: 'pending', emoji: '⏳', label: 'Pending' },
+      { status: 'approved', emoji: '✅', label: 'Approved' },
+      { status: 'rejected', emoji: '❌', label: 'Rejected' },
+      { status: 'already_exists', emoji: 'ℹ️', label: 'Already in library' },
+      { status: 'failed', emoji: '⚠️', label: 'Failed' },
+    ];
+
+    for (const { status, emoji, label } of statuses) {
+      const blocks = buildMyRequestsMessage([
+        { type: 'movie', title: 'Test', year: 2024, status, createdAt: '2024-01-15T10:30:00' },
+      ]);
+      const itemBlock = blocks[2] as any;
+      expect(itemBlock.text.text).toContain(emoji);
+      expect(itemBlock.text.text).toContain(label);
+    }
+  });
+
+  it('includes title, year, and date in item text', () => {
+    const blocks = buildMyRequestsMessage([
+      { type: 'movie', title: 'Inception', year: 2010, status: 'approved', createdAt: '2024-03-20T14:00:00' },
+    ]);
+    const itemBlock = blocks[2] as any;
+    expect(itemBlock.text.text).toContain('Inception');
+    expect(itemBlock.text.text).toContain('2010');
+    expect(itemBlock.text.text).toContain('2024-03-20');
+  });
+
+  it('shows correct count in header', () => {
+    const requests: MyRequestItem[] = [
+      { type: 'movie', title: 'Movie 1', year: 2020, status: 'pending', createdAt: '2024-01-01T00:00:00' },
+      { type: 'tv', title: 'Show 1', year: 2021, status: 'approved', createdAt: '2024-01-02T00:00:00' },
+      { type: 'movie', title: 'Movie 2', year: 2022, status: 'rejected', createdAt: '2024-01-03T00:00:00' },
+    ];
+    const blocks = buildMyRequestsMessage(requests);
+    expect((blocks[0] as any).text.text).toContain('(3)');
+  });
+
+  it('renders mixed movie and TV requests', () => {
+    const requests: MyRequestItem[] = [
+      { type: 'tv', title: 'Breaking Bad', year: 2008, status: 'approved', createdAt: '2024-01-02T00:00:00' },
+      { type: 'movie', title: 'The Batman', year: 2022, status: 'pending', createdAt: '2024-01-01T00:00:00' },
+    ];
+    const blocks = buildMyRequestsMessage(requests);
+    expect(blocks).toHaveLength(4); // header + divider + 2 items
+    expect((blocks[2] as any).text.text).toContain(':tv:');
+    expect((blocks[3] as any).text.text).toContain(':clapper:');
   });
 });

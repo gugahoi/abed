@@ -10,6 +10,8 @@ import {
   getTvRequest,
   getTvRequestByTvdbId,
   updateTvRequestStatus,
+  getRequestsByUserId,
+  getTvRequestsByUserId,
 } from '../../src/db/index';
 
 describe('database', () => {
@@ -207,5 +209,111 @@ describe('database — tv_requests', () => {
     expect(() => updateTvRequestStatus({ id: 9999, status: 'approved' })).toThrow(
       'TV request 9999 not found',
     );
+  });
+});
+
+describe('getRequestsByUserId', () => {
+  beforeEach(() => {
+    _resetDb();
+    getDb(':memory:');
+  });
+
+  it('returns empty array for unknown user', () => {
+    expect(getRequestsByUserId('U_NOBODY')).toEqual([]);
+  });
+
+  it('returns only the requesting users requests', () => {
+    createRequest({ movie_title: 'Dune', tmdb_id: 1, year: 2021, requester_slack_id: 'U1' });
+    createRequest({ movie_title: 'Tenet', tmdb_id: 2, year: 2020, requester_slack_id: 'U2' });
+
+    const results = getRequestsByUserId('U1');
+    expect(results).toHaveLength(1);
+    expect(results[0]!.movie_title).toBe('Dune');
+  });
+
+  it('returns requests ordered by created_at DESC', async () => {
+    const req1 = createRequest({ movie_title: 'Movie A', tmdb_id: 1, year: 2020, requester_slack_id: 'U1' });
+    await new Promise(resolve => setTimeout(resolve, 10));
+    const req2 = createRequest({ movie_title: 'Movie B', tmdb_id: 2, year: 2021, requester_slack_id: 'U1' });
+
+    const results = getRequestsByUserId('U1');
+    expect(results).toHaveLength(2);
+    const newerReq = req2.created_at > req1.created_at ? req2 : req1;
+    const olderReq = req2.created_at > req1.created_at ? req1 : req2;
+    expect(results[0]!.id).toBe(newerReq.id);
+    expect(results[1]!.id).toBe(olderReq.id);
+  });
+
+  it('filters by status when provided', () => {
+    createRequest({ movie_title: 'Pending Movie', tmdb_id: 1, year: 2020, requester_slack_id: 'U1' });
+    const req2 = createRequest({ movie_title: 'Approved Movie', tmdb_id: 2, year: 2021, requester_slack_id: 'U1' });
+    updateRequestStatus({ id: req2.id, status: 'approved', approver_slack_id: 'U_APP' });
+
+    const pending = getRequestsByUserId('U1', 'pending');
+    expect(pending).toHaveLength(1);
+    expect(pending[0]!.movie_title).toBe('Pending Movie');
+
+    const approved = getRequestsByUserId('U1', 'approved');
+    expect(approved).toHaveLength(1);
+    expect(approved[0]!.movie_title).toBe('Approved Movie');
+  });
+
+  it('limits results to 15', () => {
+    for (let i = 0; i < 20; i++) {
+      createRequest({ movie_title: `Movie ${i}`, tmdb_id: i, year: 2020, requester_slack_id: 'U1' });
+    }
+    const results = getRequestsByUserId('U1');
+    expect(results).toHaveLength(15);
+  });
+});
+
+describe('getTvRequestsByUserId', () => {
+  beforeEach(() => {
+    _resetDb();
+    getDb(':memory:');
+  });
+
+  it('returns empty array for unknown user', () => {
+    expect(getTvRequestsByUserId('U_NOBODY')).toEqual([]);
+  });
+
+  it('returns only the requesting users requests', () => {
+    createTvRequest({ show_title: 'Breaking Bad', tvdb_id: 1, year: 2008, requester_slack_id: 'U1' });
+    createTvRequest({ show_title: 'The Wire', tvdb_id: 2, year: 2002, requester_slack_id: 'U2' });
+
+    const results = getTvRequestsByUserId('U1');
+    expect(results).toHaveLength(1);
+    expect(results[0]!.show_title).toBe('Breaking Bad');
+  });
+
+  it('returns requests ordered by created_at DESC', async () => {
+    const req1 = createTvRequest({ show_title: 'Show A', tvdb_id: 1, year: 2020, requester_slack_id: 'U1' });
+    await new Promise(resolve => setTimeout(resolve, 10));
+    const req2 = createTvRequest({ show_title: 'Show B', tvdb_id: 2, year: 2021, requester_slack_id: 'U1' });
+
+    const results = getTvRequestsByUserId('U1');
+    expect(results).toHaveLength(2);
+    const newerReq = req2.created_at > req1.created_at ? req2 : req1;
+    const olderReq = req2.created_at > req1.created_at ? req1 : req2;
+    expect(results[0]!.id).toBe(newerReq.id);
+    expect(results[1]!.id).toBe(olderReq.id);
+  });
+
+  it('filters by status when provided', () => {
+    createTvRequest({ show_title: 'Pending Show', tvdb_id: 1, year: 2020, requester_slack_id: 'U1' });
+    const req2 = createTvRequest({ show_title: 'Approved Show', tvdb_id: 2, year: 2021, requester_slack_id: 'U1' });
+    updateTvRequestStatus({ id: req2.id, status: 'approved', approver_slack_id: 'U_APP' });
+
+    const pending = getTvRequestsByUserId('U1', 'pending');
+    expect(pending).toHaveLength(1);
+    expect(pending[0]!.show_title).toBe('Pending Show');
+  });
+
+  it('limits results to 15', () => {
+    for (let i = 0; i < 20; i++) {
+      createTvRequest({ show_title: `Show ${i}`, tvdb_id: i, year: 2020, requester_slack_id: 'U1' });
+    }
+    const results = getTvRequestsByUserId('U1');
+    expect(results).toHaveLength(15);
   });
 });

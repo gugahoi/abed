@@ -6,6 +6,7 @@ import type {
   TvRequest,
   CreateTvRequestInput,
   UpdateTvRequestStatusInput,
+  RequestStatus,
 } from './types';
 
 const DB_PATH = process.env.DB_PATH ?? './data/requests.db';
@@ -47,6 +48,7 @@ function initSchema(db: Database): void {
 
     CREATE INDEX IF NOT EXISTS idx_requests_tmdb_id ON requests(tmdb_id);
     CREATE INDEX IF NOT EXISTS idx_requests_status ON requests(status);
+    CREATE INDEX IF NOT EXISTS idx_requests_requester ON requests(requester_slack_id);
 
     CREATE TABLE IF NOT EXISTS tv_requests (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -64,6 +66,7 @@ function initSchema(db: Database): void {
     );
     CREATE INDEX IF NOT EXISTS idx_tv_requests_tvdb_id ON tv_requests(tvdb_id);
     CREATE INDEX IF NOT EXISTS idx_tv_requests_status ON tv_requests(status);
+    CREATE INDEX IF NOT EXISTS idx_tv_requests_requester ON tv_requests(requester_slack_id);
   `);
 
   migrateDownloadedNotified(db);
@@ -143,6 +146,18 @@ export function getRequestByTmdbId(tmdbId: number): MovieRequest | null {
   );
 }
 
+export function getRequestsByUserId(slackId: string, status?: RequestStatus): MovieRequest[] {
+  const db = getDb();
+  if (status) {
+    return db.prepare<MovieRequest, [string, string]>(
+      'SELECT * FROM requests WHERE requester_slack_id = ? AND status = ? ORDER BY created_at DESC LIMIT 15',
+    ).all(slackId, status);
+  }
+  return db.prepare<MovieRequest, [string]>(
+    'SELECT * FROM requests WHERE requester_slack_id = ? ORDER BY created_at DESC LIMIT 15',
+  ).all(slackId);
+}
+
 export function updateRequestStatus(input: UpdateRequestStatusInput): MovieRequest {
   const db = getDb();
   const setClauses = ['status = ?', "updated_at = datetime('now')"];
@@ -198,6 +213,18 @@ export function getTvRequestByTvdbId(tvdbId: number): TvRequest | null {
       )
       .get(tvdbId) ?? null
   );
+}
+
+export function getTvRequestsByUserId(slackId: string, status?: RequestStatus): TvRequest[] {
+  const db = getDb();
+  if (status) {
+    return db.prepare<TvRequest, [string, string]>(
+      'SELECT * FROM tv_requests WHERE requester_slack_id = ? AND status = ? ORDER BY created_at DESC LIMIT 15',
+    ).all(slackId, status);
+  }
+  return db.prepare<TvRequest, [string]>(
+    'SELECT * FROM tv_requests WHERE requester_slack_id = ? ORDER BY created_at DESC LIMIT 15',
+  ).all(slackId);
 }
 
 export function updateTvRequestStatus(input: UpdateTvRequestStatusInput): TvRequest {

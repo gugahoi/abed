@@ -9,6 +9,7 @@ import { registerTvCommand } from './commands/tv';
 import { registerSelectTvAction } from './actions/selectTv';
 import { registerApproveTvAction } from './actions/approveTv';
 import { registerRejectTvAction } from './actions/rejectTv';
+import { registerMyRequestsCommand } from './commands/myrequests';
 
 export function createSlackApp(config: {
   botToken: string;
@@ -49,23 +50,25 @@ export function createSlackApp(config: {
     approvalChannelId: config.approvalChannelId,
   } : null);
 
-  if (config.sonarr) {
-    registerSelectTvAction(app, {
-      sonarrClient: config.sonarr.sonarrClient,
-      approvalChannelId: config.approvalChannelId,
-    });
-    registerApproveTvAction(app, {
-      sonarrClient: config.sonarr.sonarrClient,
-      approverSlackIds: config.approverSlackIds,
-      approvalChannelId: config.approvalChannelId,
-      qualityProfileId: config.sonarr.qualityProfileId,
-      rootFolderPath: config.sonarr.rootFolderPath,
-    });
-    registerRejectTvAction(app, {
-      approverSlackIds: config.approverSlackIds,
-      approvalChannelId: config.approvalChannelId,
-    });
-  }
+   if (config.sonarr) {
+     registerSelectTvAction(app, {
+       sonarrClient: config.sonarr.sonarrClient,
+       approvalChannelId: config.approvalChannelId,
+     });
+     registerApproveTvAction(app, {
+       sonarrClient: config.sonarr.sonarrClient,
+       approverSlackIds: config.approverSlackIds,
+       approvalChannelId: config.approvalChannelId,
+       qualityProfileId: config.sonarr.qualityProfileId,
+       rootFolderPath: config.sonarr.rootFolderPath,
+     });
+     registerRejectTvAction(app, {
+       approverSlackIds: config.approverSlackIds,
+       approvalChannelId: config.approvalChannelId,
+     });
+   }
 
-  return app;
+   registerMyRequestsCommand(app);
+
+   return app;
 }

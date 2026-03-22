@@ -306,3 +306,68 @@ export function buildTvRejectedMessage(
     },
   ];
 }
+
+export type MyRequestItem = {
+  type: 'movie' | 'tv';
+  title: string;
+  year: number;
+  status: string;
+  createdAt: string;
+};
+
+const STATUS_EMOJI: Record<string, string> = {
+  pending: '⏳',
+  approved: '✅',
+  rejected: '❌',
+  already_exists: 'ℹ️',
+  failed: '⚠️',
+};
+
+const STATUS_LABEL: Record<string, string> = {
+  pending: 'Pending',
+  approved: 'Approved',
+  rejected: 'Rejected',
+  already_exists: 'Already in library',
+  failed: 'Failed',
+};
+
+export function buildMyRequestsMessage(requests: MyRequestItem[]): Block[] {
+  if (requests.length === 0) {
+    return [
+      {
+        type: 'section',
+        text: {
+          type: 'mrkdwn',
+          text: ":popcorn: You haven't made any requests yet. Use `/movie` or `/tv` to request something!",
+        },
+      },
+    ];
+  }
+
+  const header: Block = {
+    type: 'section',
+    text: {
+      type: 'mrkdwn',
+      text: `:popcorn: *Your Requests* (${requests.length})`,
+    },
+  };
+
+  const divider: Block = { type: 'divider' };
+
+  const items: Block[] = requests.map((req) => {
+    const typeEmoji = req.type === 'movie' ? ':clapper:' : ':tv:';
+    const statusEmoji = STATUS_EMOJI[req.status] ?? '❓';
+    const statusLabel = STATUS_LABEL[req.status] ?? req.status;
+    const date = req.createdAt.split('T')[0] ?? req.createdAt;
+
+    return {
+      type: 'section' as const,
+      text: {
+        type: 'mrkdwn' as const,
+        text: `${typeEmoji} *${req.title}* (${req.year})\n${statusEmoji} ${statusLabel} · ${date}`,
+      },
+    };
+  });
+
+  return [header, divider, ...items];
+}
