@@ -32,6 +32,12 @@ export type SonarrSeries = {
   imdbId?: string;
   monitored: boolean;
   status: string;
+  statistics?: {
+    episodeFileCount: number;
+    episodeCount: number;
+    totalEpisodeCount: number;
+    sizeOnDisk: number;
+  };
 };
 
 export type AddSeriesPayload = SonarrSearchResult & {

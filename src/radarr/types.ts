@@ -30,6 +30,7 @@ export type RadarrMovie = {
   imdbId?: string;
   monitored: boolean;
   status: string;
+  hasFile: boolean;
 };
 
 export type AddMoviePayload = RadarrSearchResult & {

@@ -11,6 +11,7 @@ export type MovieRequest = {
   approver_slack_id: string | null;
   status: RequestStatus;
   slack_message_ts: string | null; // timestamp of approval message in Slack
+  downloaded_notified: number; // 0 = not notified, 1 = notified
   created_at: string; // ISO timestamp
   updated_at: string; // ISO timestamp
 };
@@ -42,6 +43,7 @@ export type TvRequest = {
   approver_slack_id: string | null;
   status: RequestStatus;
   slack_message_ts: string | null;
+  downloaded_notified: number; // 0 = not notified, 1 = notified
   created_at: string;
   updated_at: string;
 };

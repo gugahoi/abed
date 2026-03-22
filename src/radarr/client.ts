@@ -59,4 +59,9 @@ export class RadarrClient {
   async getRootFolders(): Promise<RadarrRootFolder[]> {
     return this.request<RadarrRootFolder[]>('/rootFolder');
   }
+
+  async getMovieByTmdbId(tmdbId: number): Promise<RadarrMovie | null> {
+    const movies = await this.request<RadarrMovie[]>(`/movie?tmdbId=${tmdbId}`);
+    return movies[0] ?? null;
+  }
 }

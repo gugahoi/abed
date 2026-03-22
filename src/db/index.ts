@@ -40,6 +40,7 @@ function initSchema(db: Database): void {
       approver_slack_id TEXT,
       status TEXT NOT NULL DEFAULT 'pending',
       slack_message_ts TEXT,
+      downloaded_notified INTEGER NOT NULL DEFAULT 0,
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
       updated_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
@@ -57,12 +58,53 @@ function initSchema(db: Database): void {
       approver_slack_id TEXT,
       status TEXT NOT NULL DEFAULT 'pending',
       slack_message_ts TEXT,
+      downloaded_notified INTEGER NOT NULL DEFAULT 0,
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
       updated_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
     CREATE INDEX IF NOT EXISTS idx_tv_requests_tvdb_id ON tv_requests(tvdb_id);
     CREATE INDEX IF NOT EXISTS idx_tv_requests_status ON tv_requests(status);
   `);
+
+  migrateDownloadedNotified(db);
+}
+
+function migrateDownloadedNotified(db: Database): void {
+  const columns = db.prepare<{ name: string }, []>(`PRAGMA table_info('requests')`).all();
+  const hasColumn = columns.some(c => c.name === 'downloaded_notified');
+  if (!hasColumn) {
+    db.exec(`ALTER TABLE requests ADD COLUMN downloaded_notified INTEGER NOT NULL DEFAULT 0`);
+  }
+
+  const tvColumns = db.prepare<{ name: string }, []>(`PRAGMA table_info('tv_requests')`).all();
+  const tvHasColumn = tvColumns.some(c => c.name === 'downloaded_notified');
+  if (!tvHasColumn) {
+    db.exec(`ALTER TABLE tv_requests ADD COLUMN downloaded_notified INTEGER NOT NULL DEFAULT 0`);
+  }
+}
+
+export function getApprovedUnnotifiedRequests(): MovieRequest[] {
+  const db = getDb();
+  return db.prepare<MovieRequest, []>(
+    `SELECT * FROM requests WHERE status = 'approved' AND downloaded_notified = 0`,
+  ).all();
+}
+
+export function getApprovedUnnotifiedTvRequests(): TvRequest[] {
+  const db = getDb();
+  return db.prepare<TvRequest, []>(
+    `SELECT * FROM tv_requests WHERE status = 'approved' AND downloaded_notified = 0`,
+  ).all();
+}
+
+export function markDownloadNotified(id: number): void {
+  const db = getDb();
+  db.prepare(`UPDATE requests SET downloaded_notified = 1, updated_at = datetime('now') WHERE id = ?`).run(id);
+}
+
+export function markTvDownloadNotified(id: number): void {
+  const db = getDb();
+  db.prepare(`UPDATE tv_requests SET downloaded_notified = 1, updated_at = datetime('now') WHERE id = ?`).run(id);
 }
 
 export function createRequest(input: CreateRequestInput): MovieRequest {

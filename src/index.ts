@@ -3,6 +3,7 @@ import { RadarrClient } from './radarr/client';
 import { SonarrClient } from './sonarr/client';
 import { createSlackApp } from './slack/index';
 import { getDb } from './db/index';
+import { startPoller, stopPoller } from './poller';
 import { createLogger } from './logger';
 
 const log = createLogger('app');
@@ -68,6 +69,13 @@ async function main(): Promise<void> {
   }, radarrClient);
 
   await app.start();
+
+  startPoller({
+    slackClient: app.client,
+    radarrClient,
+    sonarrClient: sonarrConfig?.sonarrClient ?? null,
+  });
+
   log.info('⚡️ Movie Bot is running!');
   log.info(`   Request channel: ${config.slack.requestChannelId}`);
   log.info(`   Approval channel: ${config.slack.approvalChannelId}`);
@@ -76,6 +84,7 @@ async function main(): Promise<void> {
 
   const shutdown = async (signal: string): Promise<void> => {
     log.info(`\n${signal} received. Shutting down gracefully...`);
+    stopPoller();
     await app.stop();
     process.exit(0);
   };

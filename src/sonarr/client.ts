@@ -61,4 +61,9 @@ export class SonarrClient {
   async getRootFolders(): Promise<SonarrRootFolder[]> {
     return this.request<SonarrRootFolder[]>('/rootfolder');
   }
+
+  async getSeriesByTvdbId(tvdbId: number): Promise<SonarrSeries | null> {
+    const series = await this.request<SonarrSeries[]>(`/series?tvdbId=${tvdbId}`);
+    return series[0] ?? null;
+  }
 }
