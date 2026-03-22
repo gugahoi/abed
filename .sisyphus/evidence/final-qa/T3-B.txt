@@ -1,0 +1,11 @@
+## Scenario T3-B: Typecheck with test files
+
+### bun run typecheck
+$ tsc --noEmit
+EXIT_CODE: 0
+
+✓ Zero TypeScript errors
+✓ All src/ and tests/ files compile cleanly under strict mode
+✓ (strict: true, noUncheckedIndexedAccess: true, verbatimModuleSyntax: true)
+
+RESULT: PASS ✓

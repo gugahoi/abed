@@ -1,0 +1,43 @@
+## Scenario T1-A: All existing tests pass after refactor
+
+### bun run typecheck
+$ tsc --noEmit
+EXIT_CODE: 0
+
+### bun test (full suite)
+bun test v1.3.11 (af24e281)
+
+tests/slack/commands/movie.test.ts:
+Error in /movie command: 140 |     expect(lastCall.text).toContain('No results found');
+141 |   });
+142 | 
+143 |   it('responds with error message on Radarr failure', async () => {
+144 |     const failingClient = {
+145 |       searchMovies: mock(async () => { throw new Error('Connection refused'); }),
+                                                       ^
+error: Connection refused
+      at <anonymous> (/Users/guga/Projects/movie-bot/tests/slack/commands/movie.test.ts:145:50)
+      at <anonymous> (/Users/guga/Projects/movie-bot/src/slack/commands/movie.ts:83:47)
+      at async <anonymous> (/Users/guga/Projects/movie-bot/tests/slack/commands/movie.test.ts:150:44)
+
+
+ 82 pass
+ 0 fail
+ 180 expect() calls
+Ran 82 tests across 10 files. [49.00ms]
+
+NOTE: "error: Connection refused" is EXPECTED — test validates error handling, still passes.
+
+### bun test tests/slack/actions/selectMovie.test.ts
+ 7 pass
+ 0 fail
+ 11 expect() calls
+Ran 7 tests across 1 file. [17.00ms]
+
+### bun test tests/integration/flow.test.ts
+ 7 pass
+ 0 fail
+ 36 expect() calls
+Ran 7 tests across 1 file. [17.00ms]
+
+RESULT: PASS ✓

@@ -1,0 +1,19 @@
+## Scenario T1-B: Helper function structural check
+
+### grep -n "export.*submitMovieForApproval" src/slack/helpers/submitForApproval.ts
+23:export async function submitMovieForApproval(params: SubmitForApprovalParams): Promise<SubmitForApprovalResult> {
+EXIT_CODE: 0
+✓ Export found at line 23
+
+### grep -n "submitMovieForApproval" src/slack/actions/selectMovie.ts
+5:import { submitMovieForApproval } from '../helpers/submitForApproval';
+41:      const result = await submitMovieForApproval({
+EXIT_CODE: 0
+✓ Import at line 5, call at line 41
+
+### ls src/slack/helpers/
+submitForApproval.ts
+EXIT_CODE: 0
+✓ NO index.ts barrel — only submitForApproval.ts present
+
+RESULT: PASS ✓

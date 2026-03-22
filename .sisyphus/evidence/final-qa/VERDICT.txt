@@ -1,0 +1,33 @@
+## Final QA Report — IMDB Link Support
+
+**Date:** 2026-03-22
+**Feature:** IMDB link/ID support in /movie command
+
+---
+
+## Results Summary
+
+| Scenario | Description | Result |
+|----------|-------------|--------|
+| T1-A | All existing tests pass + typecheck clean | ✓ PASS |
+| T1-B | Helper function structural check | ✓ PASS |
+| T2-A | Regression check (typecheck + all tests) | ✓ PASS |
+| T2-B | IMDB regex verified against 7 inputs | ✓ PASS (7/7) |
+| T3-A | All tests pass including new IMDB tests | ✓ PASS |
+| T3-B | Typecheck with test files | ✓ PASS |
+
+---
+
+## Evidence Files
+- T1-A.txt: typecheck=exit 0, 82 pass 0 fail
+- T1-B.txt: export at line 23, import+call confirmed, no barrel
+- T2-A.txt: typecheck=exit 0, 82 pass 0 fail, 13 pass movie.test.ts
+- T2-B.txt: 7/7 regex inputs correct
+- T3-A.txt: 82 pass, all 3 key files present, 8 IMDB-named tests confirmed
+- T3-B.txt: typecheck exit 0
+
+---
+
+## Verdict
+
+Scenarios [6/6 pass] | Integration [7/7] | Edge Cases [7 tested] | VERDICT: APPROVE

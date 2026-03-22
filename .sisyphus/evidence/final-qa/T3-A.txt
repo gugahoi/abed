@@ -1,0 +1,44 @@
+## Scenario T3-A: All tests pass including new IMDB tests
+
+### Full test suite:
+bun test v1.3.11 (af24e281)
+
+ 82 pass
+ 0 fail
+ 180 expect() calls
+Ran 82 tests across 10 files. [47.00ms]
+
+NOTE: "error: Connection refused" in output is EXPECTED — it's from a test validating error handling.
+
+### Test files verified present:
+tests/slack/helpers/submitForApproval.test.ts ✓
+tests/slack/commands/movie.test.ts ✓
+tests/integration/flow.test.ts ✓
+
+### Running the 3 key test files explicitly:
+ 24 pass
+ 0 fail
+ 66 expect() calls
+Ran 24 tests across 3 files. [30.00ms]
+
+### submitForApproval.test.ts isolated:
+ 4 pass
+ 0 fail
+ 13 expect() calls
+Ran 4 tests across 1 file. [12.00ms]
+
+### IMDB-specific test names confirmed in files:
+tests/slack/commands/movie.test.ts:168:  it('detects bare IMDB ID and calls searchMovies with imdb: prefix')
+tests/slack/commands/movie.test.ts:180:  it('detects full IMDB URL and extracts the ID correctly')
+tests/slack/commands/movie.test.ts:192:  it('responds ephemerally when IMDB ID not found in Radarr')
+tests/slack/commands/movie.test.ts:206:  it('responds with already-in-library when IMDB movie exists in Radarr')
+tests/slack/commands/movie.test.ts:220:  it('responds with success message when IMDB movie is submitted for approval')
+tests/slack/commands/movie.test.ts:234:  it('plain title does NOT trigger IMDB path — uses normal search with cache')
+tests/integration/flow.test.ts:237:    it('IMDB bare ID → approval posted, DB record has imdb_id set')
+tests/integration/flow.test.ts:258:    it('IMDB flow → approve works end-to-end')
+
+Total: 82 tests ≥ 82, 0 failures ✓
+All 3 key files present ✓
+IMDB tests present ✓
+
+RESULT: PASS ✓

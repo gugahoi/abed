@@ -1,0 +1,9 @@
+PASS "tt1877830" -> tt1877830
+PASS "https://www.imdb.com/title/tt1877830/" -> tt1877830
+PASS "https://imdb.com/title/tt1877830" -> tt1877830
+PASS "https://www.imdb.com/title/tt1877830/reviews" -> tt1877830
+PASS "http://www.imdb.com/title/tt12345678/" -> tt12345678
+PASS "The Batman" -> null
+PASS "batman tt" -> null
+ALL PASS
+Pass count: 7/7

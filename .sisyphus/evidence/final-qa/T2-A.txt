@@ -1,0 +1,25 @@
+## Scenario T2-A: Regression check
+
+### bun run typecheck
+$ tsc --noEmit
+TYPECHECK_EXIT: 0
+✓ Clean compile
+
+### bun test (full suite)
+bun test v1.3.11 (af24e281)
+
+tests/slack/commands/movie.test.ts:
+Error in /movie command: [Connection refused — EXPECTED, test still passes]
+
+ 82 pass
+ 0 fail
+ 180 expect() calls
+Ran 82 tests across 10 files. [104.00ms]
+
+### bun test tests/slack/commands/movie.test.ts
+ 13 pass
+ 0 fail
+ 17 expect() calls
+Ran 13 tests across 1 file. [19.00ms]
+
+RESULT: PASS ✓

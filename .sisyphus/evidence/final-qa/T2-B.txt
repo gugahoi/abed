@@ -1,0 +1,18 @@
+## Scenario T2-B: IMDB regex verification
+
+Regex tested: /^(?:https?:\/\/(?:www\.)?imdb\.com\/title\/)?(tt\d{7,8})\/?.*$/i
+
+### Results for all 7 inputs:
+
+MATCH: "tt1877830" -> "tt1877830"                          ✓ EXPECTED: captures "tt1877830"
+MATCH: "https://www.imdb.com/title/tt1877830/" -> "tt1877830"   ✓ EXPECTED: captures "tt1877830"
+MATCH: "https://imdb.com/title/tt1877830" -> "tt1877830"    ✓ EXPECTED: captures "tt1877830"
+MATCH: "https://www.imdb.com/title/tt1877830/reviews" -> "tt1877830"  ✓ EXPECTED: captures "tt1877830"
+MATCH: "http://www.imdb.com/title/tt12345678/" -> "tt12345678"  ✓ EXPECTED: captures "tt12345678" (8 digits)
+NO MATCH: "The Batman"                                      ✓ EXPECTED: no match
+NO MATCH: "batman tt"                                       ✓ EXPECTED: no match
+
+All 5 valid IMDB patterns matched correctly.
+Both invalid inputs correctly returned null (NO MATCH).
+
+RESULT: PASS ✓ (7/7)

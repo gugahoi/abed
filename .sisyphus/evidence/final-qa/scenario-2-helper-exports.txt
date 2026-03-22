@@ -1,0 +1,7 @@
+=== SCENARIO 2: Helper function exports ===
+23:export async function submitMovieForApproval(params: SubmitForApprovalParams): Promise<SubmitForApprovalResult> {
+---
+5:import { submitMovieForApproval } from '../helpers/submitForApproval';
+41:      const result = await submitMovieForApproval({
+---
+ls: src/slack/helpers/index.ts: No such file or directory
