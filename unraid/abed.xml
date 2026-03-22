@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Container version="2">
-  <Name>movie-bot</Name>
-  <Repository>ghcr.io/gugahoi/movie-bot:latest</Repository>
-  <Registry>https://ghcr.io/v2/gugahoi/movie-bot/</Registry>
+  <Name>abed</Name>
+  <Repository>ghcr.io/gugahoi/abed:latest</Repository>
+  <Registry>https://ghcr.io/v2/gugahoi/abed/</Registry>
   <Branch>
     <Tag>latest</Tag>
     <TagDescription>Latest stable release</TagDescription>
@@ -10,18 +10,18 @@
   <Network>bridge</Network>
   <Shell>sh</Shell>
   <Privileged>false</Privileged>
-  <Support>https://github.com/gugahoi/movie-bot/issues</Support>
-  <Project>https://github.com/gugahoi/movie-bot</Project>
+  <Support>https://github.com/gugahoi/abed/issues</Support>
+  <Project>https://github.com/gugahoi/abed</Project>
   <Overview>Slack bot for movie/TV show requests with Radarr/Sonarr approval workflow. Users run /movie or /tv commands in Slack, select from search results, and approvers can approve or reject requests. Uses Socket Mode — no ports required.</Overview>
   <Category>Tools: MediaApp:Other</Category>
   <WebUI/>
-  <Icon>https://raw.githubusercontent.com/gugahoi/movie-bot/main/unraid/movie-bot-icon.png</Icon>
+  <Icon>https://raw.githubusercontent.com/gugahoi/abed/main/unraid/abed-icon.png</Icon>
   <ExtraParams/>
   <DonateText/>
   <DonateLink/>
   <DonateImg/>
   <Description>Slack bot for movie/TV show requests with Radarr/Sonarr approval workflow. Uses Socket Mode — no ports required.</Description>
-  <Config Name="Data Directory" Target="/app/data" Default="/mnt/user/appdata/movie-bot" Mode="rw" Description="Persistent storage for SQLite database" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/movie-bot</Config>
+  <Config Name="Data Directory" Target="/app/data" Default="/mnt/user/appdata/abed" Mode="rw" Description="Persistent storage for SQLite database" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/abed</Config>
   <Config Name="Slack Bot Token" Target="SLACK_BOT_TOKEN" Default="" Mode="" Description="Bot User OAuth Token (starts with xoxb-)" Type="Variable" Display="always" Required="true" Mask="true"/>
   <Config Name="Slack App Token" Target="SLACK_APP_TOKEN" Default="" Mode="" Description="App-Level Token for Socket Mode (starts with xapp-)" Type="Variable" Display="always" Required="true" Mask="true"/>
   <Config Name="Slack Request Channel ID" Target="SLACK_REQUEST_CHANNEL_ID" Default="" Mode="" Description="Channel ID where users make requests (starts with C)" Type="Variable" Display="always" Required="true" Mask="false"/>
