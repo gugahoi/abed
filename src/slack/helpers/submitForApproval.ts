@@ -1,7 +1,9 @@
 import type { RadarrSearchResult } from '../../radarr/types';
 import type { RadarrClient } from '../../radarr/client';
-import { createRequest, updateRequestStatus } from '../../db/index';
-import { buildApprovalRequestMessage } from '../messages/index';
+import type { SonarrSearchResult } from '../../sonarr/types';
+import type { SonarrClient } from '../../sonarr/client';
+import { createRequest, updateRequestStatus, createTvRequest, updateTvRequestStatus } from '../../db/index';
+import { buildApprovalRequestMessage, buildTvApprovalRequestMessage } from '../messages/index';
 import { createLogger } from '../../logger';
 
 const log = createLogger('submit');
@@ -78,6 +80,82 @@ export async function submitMovieForApproval(params: SubmitForApprovalParams): P
   });
 
   log.info('Approval posted', { movie: `${movie.title} (${movie.year})`, tmdbId: movie.tmdbId, requestId: request.id });
+
+  return { success: true };
+}
+
+type SubmitTvForApprovalParams = {
+  show: SonarrSearchResult;
+  userId: string;
+  client: {
+    chat: { postMessage: (args: any) => Promise<any> };
+    conversations: { join: (args: any) => Promise<any> };
+  };
+  sonarrClient: SonarrClient;
+  approvalChannelId: string;
+};
+
+export async function submitTvForApproval(params: SubmitTvForApprovalParams): Promise<SubmitForApprovalResult> {
+  const { show, userId, client, sonarrClient, approvalChannelId } = params;
+
+  const exists = await sonarrClient.seriesExists(show.tvdbId);
+  if (exists) {
+    log.info('Already in Sonarr', { user: userId, show: `${show.title} (${show.year})`, tvdbId: show.tvdbId });
+    return { success: false, alreadyExists: true };
+  }
+
+  const posterImage = show.images.find(img => img.coverType === 'poster');
+  const posterUrl = posterImage?.remoteUrl ?? null;
+
+  const request = createTvRequest({
+    show_title: show.title,
+    tvdb_id: show.tvdbId,
+    year: show.year,
+    poster_url: posterUrl,
+    requester_slack_id: userId,
+  });
+
+  const seasonCount = show.seasons.filter(s => s.seasonNumber > 0).length;
+
+  const postApprovalMessage = () =>
+    client.chat.postMessage({
+      channel: approvalChannelId,
+      blocks: buildTvApprovalRequestMessage(
+        {
+          title: show.title,
+          year: show.year,
+          tvdbId: show.tvdbId,
+          posterUrl,
+          overview: show.overview,
+          network: show.network,
+          seasonCount,
+        },
+        userId,
+      ),
+      text: `TV show request: ${show.title} (${show.year})`,
+    });
+
+  let result;
+  try {
+    result = await postApprovalMessage();
+  } catch (postError: any) {
+    if (postError?.data?.error === 'not_in_channel') {
+      log.warn('Auto-joining approval channel', { channel: approvalChannelId });
+      await client.conversations.join({ channel: approvalChannelId });
+      result = await postApprovalMessage();
+    } else {
+      log.error('Error submitting for approval', { user: userId, tvdbId: show.tvdbId, error: postError instanceof Error ? postError.message : String(postError) });
+      throw postError;
+    }
+  }
+
+  updateTvRequestStatus({
+    id: request.id,
+    status: 'pending',
+    slack_message_ts: result.ts as string,
+  });
+
+  log.info('Approval posted', { show: `${show.title} (${show.year})`, tvdbId: show.tvdbId, requestId: request.id });
 
   return { success: true };
 }

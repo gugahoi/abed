@@ -129,3 +129,92 @@ describe('config', () => {
     expect(second.radarr.apiKey).toBe('new-key');
   });
 });
+
+describe('sonarr configuration', () => {
+  const ALL_VARS = [
+    'SLACK_BOT_TOKEN',
+    'SLACK_APP_TOKEN',
+    'SLACK_REQUEST_CHANNEL_ID',
+    'SLACK_APPROVAL_CHANNEL_ID',
+    'RADARR_URL',
+    'RADARR_API_KEY',
+    'APPROVER_SLACK_IDS',
+    'RADARR_QUALITY_PROFILE_ID',
+    'RADARR_ROOT_FOLDER_PATH',
+    'SONARR_URL',
+    'SONARR_API_KEY',
+    'SONARR_QUALITY_PROFILE_ID',
+    'SONARR_ROOT_FOLDER_PATH',
+  ];
+
+  const savedEnv: Record<string, string | undefined> = {};
+
+  beforeEach(() => {
+    for (const key of ALL_VARS) {
+      savedEnv[key] = process.env[key];
+      delete process.env[key];
+    }
+    _resetConfig();
+  });
+
+  afterEach(() => {
+    for (const key of ALL_VARS) {
+      if (savedEnv[key] === undefined) {
+        delete process.env[key];
+      } else {
+        process.env[key] = savedEnv[key];
+      }
+    }
+    _resetConfig();
+  });
+
+  it('sonarr is null when no SONARR vars are set', () => {
+    setAllVars();
+
+    const config = getConfig();
+    expect(config.sonarr).toBeNull();
+  });
+
+  it('sonarr is parsed when all SONARR vars are set', () => {
+    setAllVars();
+    process.env.SONARR_URL = 'http://localhost:8989';
+    process.env.SONARR_API_KEY = 'sonarr-key';
+    process.env.SONARR_QUALITY_PROFILE_ID = '2';
+    process.env.SONARR_ROOT_FOLDER_PATH = '/tv';
+
+    const config = getConfig();
+    expect(config.sonarr).not.toBeNull();
+    expect(config.sonarr!.url).toBe('http://localhost:8989');
+    expect(config.sonarr!.apiKey).toBe('sonarr-key');
+    expect(config.sonarr!.qualityProfileId).toBe(2);
+    expect(config.sonarr!.rootFolderPath).toBe('/tv');
+  });
+
+  it('throws when only some SONARR vars are set', () => {
+    setAllVars();
+    process.env.SONARR_URL = 'http://localhost:8989';
+
+    expect(() => getConfig()).toThrow('Incomplete Sonarr configuration');
+  });
+
+  it('strips trailing slash from SONARR_URL', () => {
+    setAllVars();
+    process.env.SONARR_URL = 'http://localhost:8989///';
+    process.env.SONARR_API_KEY = 'sonarr-key';
+    process.env.SONARR_QUALITY_PROFILE_ID = '2';
+    process.env.SONARR_ROOT_FOLDER_PATH = '/tv';
+
+    const config = getConfig();
+    expect(config.sonarr!.url).toBe('http://localhost:8989');
+  });
+
+  it('throws on invalid SONARR_QUALITY_PROFILE_ID', () => {
+    setAllVars();
+    process.env.SONARR_URL = 'http://localhost:8989';
+    process.env.SONARR_API_KEY = 'sonarr-key';
+    process.env.SONARR_QUALITY_PROFILE_ID = 'abc';
+    process.env.SONARR_ROOT_FOLDER_PATH = '/tv';
+
+    expect(() => getConfig()).toThrow('SONARR_QUALITY_PROFILE_ID');
+  });
+});

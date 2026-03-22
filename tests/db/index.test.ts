@@ -6,6 +6,10 @@ import {
   getRequest,
   getRequestByTmdbId,
   updateRequestStatus,
+  createTvRequest,
+  getTvRequest,
+  getTvRequestByTvdbId,
+  updateTvRequestStatus,
 } from '../../src/db/index';
 
 describe('database', () => {
@@ -129,5 +133,79 @@ describe('database', () => {
       });
       expect(updated.slack_message_ts).toBe('111.222');
     });
+  });
+});
+
+describe('database — tv_requests', () => {
+  beforeEach(() => {
+    _resetDb();
+    getDb(':memory:');
+  });
+
+  it('createTvRequest returns a TvRequest with correct fields', () => {
+    const req = createTvRequest({
+      show_title: 'Breaking Bad',
+      tvdb_id: 81189,
+      year: 2008,
+      requester_slack_id: 'U123',
+    });
+
+    expect(req.id).toBeGreaterThan(0);
+    expect(req.show_title).toBe('Breaking Bad');
+    expect(req.tvdb_id).toBe(81189);
+    expect(req.year).toBe(2008);
+    expect(req.status).toBe('pending');
+    expect(req.approver_slack_id).toBeNull();
+    expect(req.poster_url).toBeNull();
+    expect(req.slack_message_ts).toBeNull();
+  });
+
+  it('getTvRequest returns request by id', () => {
+    const created = createTvRequest({
+      show_title: 'Breaking Bad',
+      tvdb_id: 81189,
+      year: 2008,
+      requester_slack_id: 'U123',
+    });
+    const fetched = getTvRequest(created.id);
+    expect(fetched).not.toBeNull();
+    expect(fetched?.show_title).toBe('Breaking Bad');
+  });
+
+  it('getTvRequest returns null for nonexistent id', () => {
+    expect(getTvRequest(9999)).toBeNull();
+  });
+
+  it('getTvRequestByTvdbId returns latest request for tvdb_id', () => {
+    createTvRequest({ show_title: 'Breaking Bad', tvdb_id: 81189, year: 2008, requester_slack_id: 'U1' });
+    createTvRequest({ show_title: 'Breaking Bad', tvdb_id: 81189, year: 2008, requester_slack_id: 'U2' });
+
+    const result = getTvRequestByTvdbId(81189);
+    expect(result).not.toBeNull();
+    expect(result!.requester_slack_id).toBe('U2');
+  });
+
+  it('updateTvRequestStatus updates status and approver', () => {
+    const req = createTvRequest({
+      show_title: 'Breaking Bad',
+      tvdb_id: 81189,
+      year: 2008,
+      requester_slack_id: 'U123',
+    });
+
+    const updated = updateTvRequestStatus({
+      id: req.id,
+      status: 'approved',
+      approver_slack_id: 'U_APPROVER',
+    });
+
+    expect(updated.status).toBe('approved');
+    expect(updated.approver_slack_id).toBe('U_APPROVER');
+  });
+
+  it('updateTvRequestStatus throws for nonexistent id', () => {
+    expect(() => updateTvRequestStatus({ id: 9999, status: 'approved' })).toThrow(
+      'TV request 9999 not found',
+    );
   });
 });

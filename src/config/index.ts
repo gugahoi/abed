@@ -12,6 +12,12 @@ export type Config = {
     qualityProfileId: number;
     rootFolderPath: string;
   };
+  sonarr: {
+    url: string;
+    apiKey: string;
+    qualityProfileId: number;
+    rootFolderPath: string;
+  } | null;
 };
 
 function loadConfig(): Config {
@@ -44,6 +50,36 @@ function loadConfig(): Config {
     );
   }
 
+  const sonarrUrl = process.env['SONARR_URL'];
+  const sonarrApiKey = process.env['SONARR_API_KEY'];
+  const sonarrQualityProfileIdRaw = process.env['SONARR_QUALITY_PROFILE_ID'];
+  const sonarrRootFolderPath = process.env['SONARR_ROOT_FOLDER_PATH'];
+
+  const sonarrVars = [sonarrUrl, sonarrApiKey, sonarrQualityProfileIdRaw, sonarrRootFolderPath];
+  const sonarrSetCount = sonarrVars.filter(v => v !== undefined && v !== '').length;
+
+  let sonarr: Config['sonarr'] = null;
+
+  if (sonarrSetCount === 4) {
+    const sonarrQualityProfileId = parseInt(sonarrQualityProfileIdRaw!, 10);
+    if (isNaN(sonarrQualityProfileId)) {
+      throw new Error(`Invalid value for SONARR_QUALITY_PROFILE_ID: "${sonarrQualityProfileIdRaw}" is not a number`);
+    }
+    sonarr = {
+      url: sonarrUrl!.replace(/\/+$/, ''),
+      apiKey: sonarrApiKey!,
+      qualityProfileId: sonarrQualityProfileId,
+      rootFolderPath: sonarrRootFolderPath!,
+    };
+  } else if (sonarrSetCount > 0) {
+    const sonarrMissing: string[] = [];
+    if (!sonarrUrl) sonarrMissing.push('SONARR_URL');
+    if (!sonarrApiKey) sonarrMissing.push('SONARR_API_KEY');
+    if (!sonarrQualityProfileIdRaw) sonarrMissing.push('SONARR_QUALITY_PROFILE_ID');
+    if (!sonarrRootFolderPath) sonarrMissing.push('SONARR_ROOT_FOLDER_PATH');
+    throw new Error(`Incomplete Sonarr configuration. Missing: ${sonarrMissing.join(', ')}. Set all four SONARR_* variables or none.`);
+  }
+
   return {
     slack: {
       botToken: slackBotToken,
@@ -61,6 +97,7 @@ function loadConfig(): Config {
       qualityProfileId: radarrQualityProfileId,
       rootFolderPath: radarrRootFolderPath,
     },
+    sonarr,
   };
 }
 

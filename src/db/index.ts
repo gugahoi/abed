@@ -1,5 +1,12 @@
 import { Database } from 'bun:sqlite';
-import type { MovieRequest, CreateRequestInput, UpdateRequestStatusInput } from './types';
+import type {
+  MovieRequest,
+  CreateRequestInput,
+  UpdateRequestStatusInput,
+  TvRequest,
+  CreateTvRequestInput,
+  UpdateTvRequestStatusInput,
+} from './types';
 
 const DB_PATH = process.env.DB_PATH ?? './data/requests.db';
 
@@ -39,6 +46,22 @@ function initSchema(db: Database): void {
 
     CREATE INDEX IF NOT EXISTS idx_requests_tmdb_id ON requests(tmdb_id);
     CREATE INDEX IF NOT EXISTS idx_requests_status ON requests(status);
+
+    CREATE TABLE IF NOT EXISTS tv_requests (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      show_title TEXT NOT NULL,
+      tvdb_id INTEGER NOT NULL,
+      year INTEGER NOT NULL,
+      poster_url TEXT,
+      requester_slack_id TEXT NOT NULL,
+      approver_slack_id TEXT,
+      status TEXT NOT NULL DEFAULT 'pending',
+      slack_message_ts TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_tv_requests_tvdb_id ON tv_requests(tvdb_id);
+    CREATE INDEX IF NOT EXISTS idx_tv_requests_status ON tv_requests(status);
   `);
 }
 
@@ -97,5 +120,62 @@ export function updateRequestStatus(input: UpdateRequestStatusInput): MovieReque
   const result = db.query<MovieRequest, (string | number | null)[]>(sql).get(...values);
 
   if (!result) throw new Error(`Request ${input.id} not found`);
+  return result;
+}
+
+export function createTvRequest(input: CreateTvRequestInput): TvRequest {
+  const db = getDb();
+  const stmt = db.prepare<TvRequest, [string, number, number, string | null, string, string | null]>(`
+    INSERT INTO tv_requests (show_title, tvdb_id, year, poster_url, requester_slack_id, slack_message_ts)
+    VALUES (?, ?, ?, ?, ?, ?)
+    RETURNING *
+  `);
+  const result = stmt.get(
+    input.show_title,
+    input.tvdb_id,
+    input.year,
+    input.poster_url ?? null,
+    input.requester_slack_id,
+    input.slack_message_ts ?? null,
+  );
+  if (!result) throw new Error('Failed to create TV request');
+  return result;
+}
+
+export function getTvRequest(id: number): TvRequest | null {
+  const db = getDb();
+  return db.prepare<TvRequest, [number]>('SELECT * FROM tv_requests WHERE id = ?').get(id) ?? null;
+}
+
+export function getTvRequestByTvdbId(tvdbId: number): TvRequest | null {
+  const db = getDb();
+  return (
+    db
+      .prepare<TvRequest, [number]>(
+        'SELECT * FROM tv_requests WHERE tvdb_id = ? ORDER BY id DESC LIMIT 1',
+      )
+      .get(tvdbId) ?? null
+  );
+}
+
+export function updateTvRequestStatus(input: UpdateTvRequestStatusInput): TvRequest {
+  const db = getDb();
+  const setClauses = ['status = ?', "updated_at = datetime('now')"];
+  const values: (string | number | null)[] = [input.status];
+
+  if (input.approver_slack_id !== undefined) {
+    setClauses.push('approver_slack_id = ?');
+    values.push(input.approver_slack_id);
+  }
+  if (input.slack_message_ts !== undefined) {
+    setClauses.push('slack_message_ts = ?');
+    values.push(input.slack_message_ts);
+  }
+  values.push(input.id);
+
+  const sql = `UPDATE tv_requests SET ${setClauses.join(', ')} WHERE id = ? RETURNING *`;
+  const result = db.query<TvRequest, (string | number | null)[]>(sql).get(...values);
+
+  if (!result) throw new Error(`TV request ${input.id} not found`);
   return result;
 }

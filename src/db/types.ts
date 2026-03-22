@@ -31,3 +31,33 @@ export type UpdateRequestStatusInput = {
   approver_slack_id?: string;
   slack_message_ts?: string;
 };
+
+export type TvRequest = {
+  id: number;
+  show_title: string;
+  tvdb_id: number;
+  year: number;
+  poster_url: string | null;
+  requester_slack_id: string;
+  approver_slack_id: string | null;
+  status: RequestStatus;
+  slack_message_ts: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type CreateTvRequestInput = {
+  show_title: string;
+  tvdb_id: number;
+  year: number;
+  poster_url?: string | null;
+  requester_slack_id: string;
+  slack_message_ts?: string | null;
+};
+
+export type UpdateTvRequestStatusInput = {
+  id: number;
+  status: RequestStatus;
+  approver_slack_id?: string;
+  slack_message_ts?: string;
+};
