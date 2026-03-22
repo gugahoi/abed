@@ -1,5 +1,15 @@
 # abed
 
+<p align="center">
+  <img src="logo.png" alt="abed logo" width="200">
+</p>
+
+> *"I can tell life from TV, Jeff. TV makes sense, it has logic, structure, rules, and likeable leading men. In life, we have this."* — Abed Nadir, *Community*
+
+Named after **Abed Nadir** from the TV show [*Community*](https://en.wikipedia.org/wiki/Community_(TV_series)) — a pop-culture encyclopedia with an encyclopedic knowledge of movies and television. If anyone's going to help you decide what to watch next, it's Abed. This bot channels that same energy into your Slack workspace.
+
+---
+
 A Slack bot that lets users request movies and TV shows directly from Slack. Users run `/movie <title>` or `/tv <title>`, the bot searches Radarr or Sonarr respectively and presents a dropdown of results. Once a user selects a title, an approval request is posted to a dedicated channel with Approve/Reject buttons. When an approver clicks Approve, the movie or TV show is automatically added to Radarr/Sonarr and the requester gets a DM confirmation. Sonarr integration is optional — the bot works with Radarr only, Sonarr only, or both. Built with [@slack/bolt](https://github.com/slackapi/bolt-js) v4 using Socket Mode — no public URL needed, works behind NAT/firewall on a NAS. Runs on Bun, stores request history in SQLite, and deploys via Docker.
 
 ---
