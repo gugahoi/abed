@@ -1,4 +1,4 @@
-# Movie Bot — Slack + Radarr Integration
+# Media Bot — Slack + Radarr Integration
 
 ## Overview
 
@@ -34,7 +34,7 @@ Notify requester via DM
 ## Project Structure
 
 ```
-movie-bot/
+abed/
 ├── src/
 │   ├── config/         # env loading, validation
 │   ├── radarr/         # Radarr API client

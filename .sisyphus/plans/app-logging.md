@@ -1,8 +1,8 @@
-# App Logging — Activity Visibility for movie-bot
+# App Logging — Activity Visibility for abed
 
 ## TL;DR
 
-> **Quick Summary**: Add a lightweight structured logger to movie-bot so operators can see what users are doing in real time via `docker logs`. Currently only startup and error logs exist — no successful user actions are recorded.
+> **Quick Summary**: Add a lightweight structured logger to abed so operators can see what users are doing in real time via `docker logs`. Currently only startup and error logs exist — no successful user actions are recorded.
 >
 > **Deliverables**:
 > - `src/logger.ts` — lightweight logger module (~60 lines, zero dependencies)
@@ -48,7 +48,7 @@ An operator watching `docker logs` sees startup messages and then silence — ev
 ## Work Objectives
 
 ### Core Objective
-Enable operators to see real-time activity traces from `docker logs movie-bot` showing who requested what, what was approved/rejected, and any errors with context.
+Enable operators to see real-time activity traces from `docker logs abed` showing who requested what, what was approved/rejected, and any errors with context.
 
 ### Concrete Deliverables
 - `src/logger.ts` — `createLogger(prefix)` → `{ debug, info, warn, error }`, level filtering via `LOG_LEVEL` env var, `_setLoggerOutput()` for tests

@@ -1,5 +1,5 @@
 {
-  "name": "movie-bot",
+  "name": "abed",
   "version": "1.0.0",
   "scripts": {
     "start": "bun run src/index.ts",

@@ -9,7 +9,7 @@ Slack bot for movie requests with approval workflow. Users `/movie <title>` → 
 ## STRUCTURE
 
 ```
-movie-bot/
+abed/
 ├── src/
 │   ├── index.ts              # Entry point: config → Radarr healthcheck → DB init → Slack app start + graceful shutdown
 │   ├── config/index.ts       # Env var parser — singleton with _resetConfig() for tests
@@ -87,7 +87,7 @@ bun run typecheck    # tsc --noEmit (strict mode, noUncheckedIndexedAccess)
 
 # Docker
 docker compose up -d              # Start on "media" network
-docker compose logs -f movie-bot  # Tail logs
+docker compose logs -f abed  # Tail logs
 ```
 
 ## NOTES

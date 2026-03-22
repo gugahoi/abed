@@ -1,4 +1,4 @@
-# movie-bot
+# abed
 
 A Slack bot that lets users request movies and TV shows directly from Slack. Users run `/movie <title>` or `/tv <title>`, the bot searches Radarr or Sonarr respectively and presents a dropdown of results. Once a user selects a title, an approval request is posted to a dedicated channel with Approve/Reject buttons. When an approver clicks Approve, the movie or TV show is automatically added to Radarr/Sonarr and the requester gets a DM confirmation. Sonarr integration is optional — the bot works with Radarr only, Sonarr only, or both. Built with [@slack/bolt](https://github.com/slackapi/bolt-js) v4 using Socket Mode — no public URL needed, works behind NAT/firewall on a NAS. Runs on Bun, stores request history in SQLite, and deploys via Docker.
 
@@ -95,7 +95,7 @@ User → /tv <title>
 ### 1. Create the App
 
 1. Go to [https://api.slack.com/apps](https://api.slack.com/apps) and click **Create New App → From Scratch**
-2. Name it `movie-bot` and select your workspace
+2. Name it `abed` and select your workspace
 3. Click **Create App**
 
 ### 2. Enable Socket Mode
@@ -241,7 +241,7 @@ Note the `path` field of your desired root folder (e.g. `/tv`). Use that as `SON
 ```bash
 # 1. Clone the repo
 git clone <repo-url>
-cd movie-bot
+cd abed
 
 # 2. Create your .env file
 cp .env.example .env
@@ -254,7 +254,7 @@ docker network create media
 docker compose up -d
 
 # 5. Check logs
-docker compose logs -f movie-bot
+docker compose logs -f abed
 ```
 
 > **Note on networking:** The `docker-compose.yml` attaches the bot to a `media` external Docker network. This is the same network Radarr and Sonarr should be running on, allowing the bot to reach them by container name (e.g. `http://radarr:7878` or `http://sonarr:8989`). If they are **not** on the same Docker network, set `RADARR_URL` / `SONARR_URL` to the host machine's LAN IP address instead (e.g. `http://192.168.1.100:7878`). Do **not** use `localhost` — inside a container, `localhost` refers to the container itself.
@@ -270,15 +270,15 @@ The bot can be installed on Unraid via the Docker UI using the included XML temp
 ### Quick Install
 
 1. In the Unraid web UI, go to **Docker → Add Container → Template Repositories**
-2. Add the template URL: `https://github.com/gugahoi/movie-bot/tree/main/unraid`
-3. Click **Save**, then select **movie-bot** from the template dropdown
+2. Add the template URL: `https://github.com/gugahoi/abed/tree/main/unraid`
+3. Click **Save**, then select **abed** from the template dropdown
 4. Fill in the required fields (Slack tokens, Radarr URL, API key, etc.)
 5. Click **Apply**
 
 Alternatively, you can pull the image manually:
 
 ```
-Repository: ghcr.io/gugahoi/movie-bot:latest
+Repository: ghcr.io/gugahoi/abed:latest
 ```
 
 ### Networking
@@ -295,7 +295,7 @@ The container supports configurable user/group IDs via `PUID` and `PGID` environ
 
 ### Data
 
-The SQLite database is stored at `/app/data/requests.db` inside the container. The template maps this to `/mnt/user/appdata/movie-bot` on the host by default.
+The SQLite database is stored at `/app/data/requests.db` inside the container. The template maps this to `/mnt/user/appdata/abed` on the host by default.
 
 ---
 

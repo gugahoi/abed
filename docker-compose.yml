@@ -1,9 +1,9 @@
 services:
-  movie-bot:
+  abed:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: movie-bot
+    container_name: abed
     restart: unless-stopped
     env_file:
       - .env

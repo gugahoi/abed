@@ -12,14 +12,14 @@ COPY tsconfig.json ./
 FROM oven/bun:1-alpine AS runtime
 WORKDIR /app
 
-LABEL org.opencontainers.image.source="https://github.com/gugahoi/movie-bot"
+LABEL org.opencontainers.image.source="https://github.com/gugahoi/abed"
 LABEL org.opencontainers.image.description="Slack bot for movie/TV requests with Radarr/Sonarr approval workflow"
 LABEL org.opencontainers.image.licenses="MIT"
 
 RUN apk add --no-cache su-exec && \
-    addgroup -g 1001 -S moviebot && \
-    adduser -u 1001 -G moviebot -S -D -H -h /app moviebot && \
-    mkdir -p /app/data && chown moviebot:moviebot /app/data
+    addgroup -g 1001 -S abed && \
+    adduser -u 1001 -G abed -S -D -H -h /app abed && \
+    mkdir -p /app/data && chown abed:abed /app/data
 
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/src ./src
