@@ -20,9 +20,9 @@ This document tracks the progress of adding Discord support to `abed` while main
 
 ## Phase 3: Core Logic Abstraction
 Currently, the business logic is tightly coupled to Slack action handlers. We need to extract this into platform-agnostic service functions (e.g., in a new `src/core/` directory).
-- [ ] **Search Logic**: Abstract the Radarr/Sonarr search.
-- [ ] **Selection Logic**: Abstract checking for duplicates, inserting the DB record, and formatting the movie/tv data.
-- [ ] **Approval Logic**: Abstract the Radarr/Sonarr API add calls and DB status updates. (Both `src/slack/...` and `src/discord/...` will call these shared core functions).
+- [x] **Search Logic**: Abstract the Radarr/Sonarr search.
+- [x] **Selection Logic**: Abstract checking for duplicates, inserting the DB record, and formatting the movie/tv data.
+- [x] **Approval Logic**: Abstract the Radarr/Sonarr API add calls and DB status updates. (Both `src/slack/...` and `src/discord/...` will call these shared core functions).
 
 ## Phase 4: Discord Implementation (`src/discord/`)
 Create a parallel folder structure to Slack:

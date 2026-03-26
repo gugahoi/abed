@@ -59,6 +59,7 @@ async function main(): Promise<void> {
   log.info('✅ Database ready.');
 
   let slackApp: ReturnType<typeof createSlackApp> | null = null;
+  let discordApp: any = null; // Will type properly when initializing
   
   if (config.slack) {
     slackApp = createSlackApp({
@@ -79,7 +80,22 @@ async function main(): Promise<void> {
 
   if (config.discord) {
     // TODO: Initialize Discord bot here
-    log.info('🎮 Discord credentials provided. (Discord bot initialization coming in later phase)');
+    log.info('🎮 Discord credentials provided. Starting Discord bot...');
+    const { createDiscordApp } = await import('./discord/index');
+    discordApp = await createDiscordApp({
+      botToken: config.discord.botToken,
+      clientId: config.discord.clientId,
+      guildId: config.discord.guildId,
+      requestChannelId: config.discord.requestChannelId,
+      approvalChannelId: config.discord.approvalChannelId,
+      approverDiscordIds: config.discord.approverDiscordIds,
+      qualityProfileId: config.radarr.qualityProfileId,
+      rootFolderPath: config.radarr.rootFolderPath,
+      sonarr: sonarrConfig,
+    }, radarrClient);
+
+    await discordApp.login(config.discord.botToken);
+    log.info('🎮 Discord bot started successfully.');
   } else {
     log.info('ℹ️  Discord credentials not provided. Discord bot will not start.');
   }
@@ -107,7 +123,7 @@ async function main(): Promise<void> {
     log.info(`\n${signal} received. Shutting down gracefully...`);
     stopPoller();
     if (slackApp) await slackApp.stop();
-    // TODO: Stop Discord bot here
+    if (discordApp) await discordApp.destroy();
     process.exit(0);
   };
 
