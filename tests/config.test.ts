@@ -48,7 +48,7 @@ describe('config', () => {
   });
 
   it('throws when all required vars are missing', () => {
-    expect(() => getConfig()).toThrow('Missing required environment variables');
+    expect(() => getConfig()).toThrow('Must configure either Slack or Discord credentials');
   });
 
   it('throws listing all missing var names when none set', () => {
@@ -59,9 +59,7 @@ describe('config', () => {
       error = e as Error;
     }
     expect(error).not.toBeNull();
-    for (const key of ALL_REQUIRED_VARS) {
-      expect(error!.message).toContain(key);
-    }
+    expect(error!.message).toContain('Must configure either Slack or Discord credentials');
   });
 
   it('throws listing only the specific missing var', () => {
@@ -75,11 +73,11 @@ describe('config', () => {
     setAllVars();
 
     const config = getConfig();
-    expect(config.slack.botToken).toBe('xoxb-test');
-    expect(config.slack.appToken).toBe('xapp-test');
-    expect(config.slack.requestChannelId).toBe('C123');
-    expect(config.slack.approvalChannelId).toBe('C456');
-    expect(config.slack.approverSlackIds).toEqual(['U123', 'U456']);
+    expect(config.slack?.botToken).toBe('xoxb-test');
+    expect(config.slack?.appToken).toBe('xapp-test');
+    expect(config.slack?.requestChannelId).toBe('C123');
+    expect(config.slack?.approvalChannelId).toBe('C456');
+    expect(config.slack?.approverSlackIds).toEqual(['U123', 'U456']);
     expect(config.radarr.url).toBe('http://localhost:7878');
     expect(config.radarr.apiKey).toBe('abc123');
     expect(config.radarr.qualityProfileId).toBe(1);
@@ -99,7 +97,7 @@ describe('config', () => {
     process.env.APPROVER_SLACK_IDS = 'U111, U222 , U333';
 
     const config = getConfig();
-    expect(config.slack.approverSlackIds).toEqual(['U111', 'U222', 'U333']);
+    expect(config.slack?.approverSlackIds).toEqual(['U111', 'U222', 'U333']);
   });
 
   it('throws on invalid (non-numeric) RADARR_QUALITY_PROFILE_ID', () => {

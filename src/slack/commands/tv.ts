@@ -2,7 +2,7 @@ import type { App } from '@slack/bolt';
 import type { SonarrClient } from '../../sonarr/client';
 import { buildTvSearchResultsMessage } from '../messages/index';
 import { storeTvResults } from '../../core/searchCache';
-import { submitTvForApproval } from '../helpers/submitForApproval';
+import { submitTvForApproval } from '../../core/helpers/submitForApproval';
 import { createLogger } from '../../logger';
 
 type TvCommandDeps = {

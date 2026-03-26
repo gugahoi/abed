@@ -3,7 +3,7 @@ import type { RadarrClient } from '../../radarr/client';
 import type { SonarrSearchResult } from '../../sonarr/types';
 import type { SonarrClient } from '../../sonarr/client';
 import { createRequest, updateRequestStatus, createTvRequest, updateTvRequestStatus } from '../../db/index';
-import { buildApprovalRequestMessage, buildTvApprovalRequestMessage } from '../messages/index';
+import { buildApprovalRequestMessage, buildTvApprovalRequestMessage } from '../../slack/messages/index';
 import { createLogger } from '../../logger';
 
 const log = createLogger('submit');
