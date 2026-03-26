@@ -26,15 +26,15 @@ Currently, the business logic is tightly coupled to Slack action handlers. We ne
 
 ## Phase 4: Discord Implementation (`src/discord/`)
 Create a parallel folder structure to Slack:
-- [ ] **Setup & Registration (`index.ts`)**: Initialize the `discord.js` Client. Register Discord Application Commands (Slash Commands) on startup.
-- [ ] **Commands (`commands/`)**:
+- [x] **Setup & Registration (`index.ts`)**: Initialize the `discord.js` Client. Register Discord Application Commands (Slash Commands) on startup.
+- [x] **Commands (`commands/`)**:
   - `/movie` & `/tv`: Call the core search logic, return a Discord Embed with a `StringSelectMenuBuilder` (dropdown) for the 25 results.
   - `/myrequests`: Query the DB by Discord user ID and return an ephemeral Embed.
-- [ ] **Messages (`messages/`)**: Create builders for Discord Embeds and Message Components (Approve/Reject `ButtonBuilder`s).
-- [ ] **Actions/Interactions (`actions/`)**:
+- [x] **Messages (`messages/`)**: Create builders for Discord Embeds and Message Components (Approve/Reject `ButtonBuilder`s).
+- [x] **Actions/Interactions (`actions/`)**:
   - **Select Menu Handler**: Receive the dropdown selection, create the DB entry, and post the Embed with Approve/Reject buttons to the Discord approval channel.
   - **Button Handlers**: Check if the clicking user is in `APPROVER_DISCORD_IDS`. If yes, call the core approval logic, update the approval message embed, and DM the requesting user.
 
 ## Phase 5: Testing & Documentation
-- [ ] **Unit Tests**: Create `tests/discord/` mirroring the structure. Use `mock()` from `bun:test` to mock `discord.js` client interactions.
-- [ ] **Documentation**: Update `README.md` with a new "Discord App Setup" section (OAuth2 URL generation, bot token scopes: `Send Messages`, `Use Slash Commands`, `Embed Links`).
+- [x] **Unit Tests**: Create `tests/discord/` mirroring the structure. Use `mock()` from `bun:test` to mock `discord.js` client interactions.
+- [x] **Documentation**: Update `README.md` with a new "Discord App Setup" section (OAuth2 URL generation, bot token scopes: `Send Messages`, `Use Slash Commands`, `Embed Links`).

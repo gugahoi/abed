@@ -10,7 +10,7 @@ Named after **Abed Nadir** from the TV show [*Community*](https://en.wikipedia.o
 
 ---
 
-A Slack bot that lets users request movies and TV shows directly from Slack. Users run `/movie <title>` or `/tv <title>`, the bot searches Radarr or Sonarr respectively and presents a dropdown of results. Once a user selects a title, an approval request is posted to a dedicated channel with Approve/Reject buttons. When an approver clicks Approve, the movie or TV show is automatically added to Radarr/Sonarr and the requester gets a DM confirmation. Sonarr integration is optional — the bot works with Radarr only, Sonarr only, or both. Built with [@slack/bolt](https://github.com/slackapi/bolt-js) v4 using Socket Mode — no public URL needed, works behind NAT/firewall on a NAS. Runs on Bun, stores request history in SQLite, and deploys via Docker.
+A Slack and Discord bot that lets users request movies and TV shows directly from chat. Users run `/movie <title>` or `/tv <title>`, the bot searches Radarr or Sonarr respectively and presents a dropdown of results. Once a user selects a title, an approval request is posted to a dedicated channel with Approve/Reject buttons. When an approver clicks Approve, the movie or TV show is automatically added to Radarr/Sonarr and the requester gets a DM confirmation. Sonarr integration is optional — the bot works with Radarr only, Sonarr only, or both. Built with [@slack/bolt](https://github.com/slackapi/bolt-js) v4 (Socket Mode) and [discord.js](https://discord.js.org/) v14. Runs on Bun, stores request history in SQLite, and deploys via Docker. You can run the Slack bot, the Discord bot, or both simultaneously!
 
 ---
 
@@ -95,7 +95,7 @@ User → /tv <title>
 ## Prerequisites
 
 - [Docker](https://docs.docker.com/get-docker/) + [Docker Compose](https://docs.docker.com/compose/)
-- A Slack workspace where you have admin access to create apps
+- A Slack workspace where you have admin access to create apps OR a Discord server where you can add bots. You can run Slack, Discord, or both!
 - A running [Radarr](https://radarr.video/) instance (on a NAS or elsewhere on the network)
 - A running [Sonarr](https://sonarr.tv/) instance (optional — only needed for TV show requests)
 
@@ -164,6 +164,41 @@ Right-click any channel in Slack → **View channel details** → scroll down to
 
 ---
 
+## Discord App Setup
+
+### 1. Create the App
+1. Go to the [Discord Developer Portal](https://discord.com/developers/applications) and click **New Application**.
+2. Name it `abed` and click **Create**.
+3. Under **Installation**, configure the default install settings or simply use the **OAuth2** tab to generate a URL.
+
+### 2. Configure the Bot
+1. Go to the **Bot** tab.
+2. Under **Privileged Gateway Intents**, turn on **Message Content Intent** (optional but recommended for future features).
+3. Click **Reset Token** and copy your **Bot Token**. Save it as `DISCORD_BOT_TOKEN`.
+
+### 3. Get the Client ID
+1. Go to the **OAuth2** tab.
+2. Copy the **Client ID**. Save it as `DISCORD_CLIENT_ID`.
+
+### 4. Invite the Bot
+1. In the **OAuth2** -> **URL Generator** tab, select the following scopes:
+   - `bot`
+   - `applications.commands`
+2. Select the following Bot Permissions:
+   - `Send Messages`
+   - `Embed Links`
+   - `Use Slash Commands`
+3. Copy the generated URL and paste it into your browser to invite the bot to your server.
+
+### 5. Get IDs (Server, Channel, Approver)
+1. In Discord, go to **User Settings -> Advanced** and turn on **Developer Mode**.
+2. Right-click your server icon and click **Copy Server ID**. Save as `DISCORD_GUILD_ID`.
+3. Right-click the channel where users will make requests and click **Copy Channel ID**. Save as `DISCORD_REQUEST_CHANNEL_ID`.
+4. Right-click the channel where approvals should go and click **Copy Channel ID**. Save as `DISCORD_APPROVAL_CHANNEL_ID`.
+5. Right-click your own username (or any approver's username) and click **Copy User ID**. Save as `APPROVER_DISCORD_IDS` (comma-separated for multiple).
+
+---
+
 ## Environment Variables
 
 Copy `.env.example` to `.env` and fill in each value:
@@ -174,13 +209,19 @@ cp .env.example .env
 
 | Variable | Required | Description | Example |
 |---|---|---|---|
-| `SLACK_BOT_TOKEN` | Yes | Bot User OAuth Token | `xoxb-...` |
-| `SLACK_APP_TOKEN` | Yes | App-Level Token (Socket Mode) | `xapp-...` |
-| `SLACK_REQUEST_CHANNEL_ID` | Yes | Channel where users make requests | `C0123456789` |
-| `SLACK_APPROVAL_CHANNEL_ID` | Yes | Channel where approval messages appear | `C9876543210` |
+| `SLACK_BOT_TOKEN` | No** | Bot User OAuth Token | `xoxb-...` |
+| `SLACK_APP_TOKEN` | No** | App-Level Token (Socket Mode) | `xapp-...` |
+| `SLACK_REQUEST_CHANNEL_ID` | No** | Channel where users make requests | `C0123456789` |
+| `SLACK_APPROVAL_CHANNEL_ID` | No** | Channel where approval messages appear | `C9876543210` |
+| `APPROVER_SLACK_IDS` | No** | Comma-separated Slack user IDs allowed to approve | `U123ABC,U456DEF` |
+| `DISCORD_BOT_TOKEN` | No** | Discord Bot Token | `MTA...` |
+| `DISCORD_CLIENT_ID` | No** | Discord Client ID | `123456789...` |
+| `DISCORD_GUILD_ID` | No** | Discord Server (Guild) ID | `987654321...` |
+| `DISCORD_REQUEST_CHANNEL_ID` | No** | Discord channel for making requests | `111222333...` |
+| `DISCORD_APPROVAL_CHANNEL_ID` | No** | Discord channel for approvals | `444555666...` |
+| `APPROVER_DISCORD_IDS` | No** | Comma-separated Discord IDs | `888999000` |
 | `RADARR_URL` | Yes | Radarr base URL | `http://192.168.1.100:7878` |
 | `RADARR_API_KEY` | Yes | Radarr API key | `abc123...` |
-| `APPROVER_SLACK_IDS` | Yes | Comma-separated Slack user IDs allowed to approve | `U123ABC,U456DEF` |
 | `RADARR_QUALITY_PROFILE_ID` | Yes | Numeric ID of the Radarr quality profile to use | `4` |
 | `RADARR_ROOT_FOLDER_PATH` | Yes | Root folder path configured in Radarr | `/movies` |
 | `DB_PATH` | No | SQLite DB file path (default: `./data/requests.db`) | `/app/data/requests.db` |
@@ -188,6 +229,8 @@ cp .env.example .env
 | `SONARR_API_KEY` | No* | Sonarr API key | `abc123...` |
 | `SONARR_QUALITY_PROFILE_ID` | No* | Numeric ID of the Sonarr quality profile to use | `1` |
 | `SONARR_ROOT_FOLDER_PATH` | No* | Root folder path configured in Sonarr | `/tv` |
+
+\*\* You must provide either all the Slack variables, all the Discord variables, or both sets. The bot will initialize whichever platforms are configured.
 
 *Sonarr variables are optional but all-or-none — set all four to enable TV show requests, or omit all four to disable them. Setting only some will cause a startup error.
 
