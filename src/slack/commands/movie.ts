@@ -1,7 +1,7 @@
 import type { App } from '@slack/bolt';
 import type { RadarrClient } from '../../radarr/client';
 import { buildSearchResultsMessage } from '../messages/index';
-import { storeResults } from '../searchCache';
+import { storeResults } from '../../core/searchCache';
 import { submitMovieForApproval } from '../helpers/submitForApproval';
 import { createLogger } from '../../logger';
 

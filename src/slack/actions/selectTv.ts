@@ -1,6 +1,6 @@
 import type { App } from '@slack/bolt';
 import type { SonarrClient } from '../../sonarr/client';
-import { getTvResults, clearTvResults } from '../searchCache';
+import { getTvResults, clearTvResults } from '../../core/searchCache';
 import { ACTION_IDS } from '../messages/index';
 import { submitTvForApproval } from '../helpers/submitForApproval';
 import { createLogger } from '../../logger';

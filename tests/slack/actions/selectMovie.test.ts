@@ -1,6 +1,6 @@
 import { describe, it, expect, mock, beforeEach } from 'bun:test';
 import { registerSelectMovieAction } from '../../../src/slack/actions/selectMovie';
-import { storeResults, clearResults } from '../../../src/slack/searchCache';
+import { storeResults, clearResults } from '../../../src/core/searchCache';
 import { _resetDb, getDb, createRequest, getRequestByTmdbId } from '../../../src/db/index';
 import { ACTION_IDS } from '../../../src/slack/messages/index';
 import { _setLoggerOutput } from '../../../src/logger';
@@ -124,7 +124,7 @@ describe('selectMovie action', () => {
     const { body, ack, respond, client } = mockActionPayload('12345');
     await app.getHandler(ACTION_IDS.SELECT_MOVIE)!({ body, ack, respond, client });
 
-    const { getResults } = await import('../../../src/slack/searchCache');
+    const { getResults } = await import('../../../src/core/searchCache');
     expect(getResults('U_TEST')).toBeNull();
   });
 

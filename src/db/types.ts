@@ -1,4 +1,5 @@
 export type RequestStatus = 'pending' | 'approved' | 'rejected' | 'already_exists' | 'failed';
+export type Platform = 'slack' | 'discord';
 
 export type MovieRequest = {
   id: number;
@@ -10,8 +11,9 @@ export type MovieRequest = {
   requester_slack_id: string;
   approver_slack_id: string | null;
   status: RequestStatus;
-  slack_message_ts: string | null; // timestamp of approval message in Slack
+  slack_message_ts: string | null; // timestamp of approval message in Slack OR Discord message ID
   downloaded_notified: number; // 0 = not notified, 1 = notified
+  platform: Platform; // 'slack' or 'discord'
   created_at: string; // ISO timestamp
   updated_at: string; // ISO timestamp
 };
@@ -22,8 +24,9 @@ export type CreateRequestInput = {
   imdb_id?: string | null;
   year: number;
   poster_url?: string | null;
-  requester_slack_id: string;
+  requester_slack_id: string; // We keep the property name for backwards compatibility but it can hold a Discord ID
   slack_message_ts?: string | null;
+  platform?: Platform; // Defaults to 'slack'
 };
 
 export type UpdateRequestStatusInput = {
@@ -44,6 +47,7 @@ export type TvRequest = {
   status: RequestStatus;
   slack_message_ts: string | null;
   downloaded_notified: number; // 0 = not notified, 1 = notified
+  platform: Platform;
   created_at: string;
   updated_at: string;
 };
@@ -55,6 +59,7 @@ export type CreateTvRequestInput = {
   poster_url?: string | null;
   requester_slack_id: string;
   slack_message_ts?: string | null;
+  platform?: Platform;
 };
 
 export type UpdateTvRequestStatusInput = {

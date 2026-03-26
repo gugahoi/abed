@@ -9,7 +9,7 @@ import { registerSelectTvAction }     from '../../src/slack/actions/selectTv';
 import { registerApproveTvAction }    from '../../src/slack/actions/approveTv';
 import { registerRejectTvAction }     from '../../src/slack/actions/rejectTv';
 
-import { storeResults, clearResults, getResults, storeTvResults, clearTvResults, getTvResults } from '../../src/slack/searchCache';
+import { storeResults, clearResults, getResults, storeTvResults, clearTvResults, getTvResults } from '../../src/core/searchCache';
 import { _resetDb, getDb, getRequestByTmdbId, getTvRequestByTvdbId } from '../../src/db/index';
 import { ACTION_IDS } from '../../src/slack/messages/index';
 import type { RadarrSearchResult } from '../../src/radarr/types';

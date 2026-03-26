@@ -58,34 +58,56 @@ async function main(): Promise<void> {
   getDb();
   log.info('✅ Database ready.');
 
-  const app = createSlackApp({
-    botToken: config.slack.botToken,
-    appToken: config.slack.appToken,
-    approvalChannelId: config.slack.approvalChannelId,
-    approverSlackIds: config.slack.approverSlackIds,
-    qualityProfileId: config.radarr.qualityProfileId,
-    rootFolderPath: config.radarr.rootFolderPath,
-    sonarr: sonarrConfig,
-  }, radarrClient);
+  let slackApp: ReturnType<typeof createSlackApp> | null = null;
+  
+  if (config.slack) {
+    slackApp = createSlackApp({
+      botToken: config.slack.botToken,
+      appToken: config.slack.appToken,
+      approvalChannelId: config.slack.approvalChannelId,
+      approverSlackIds: config.slack.approverSlackIds,
+      qualityProfileId: config.radarr.qualityProfileId,
+      rootFolderPath: config.radarr.rootFolderPath,
+      sonarr: sonarrConfig,
+    }, radarrClient);
 
-  await app.start();
+    await slackApp.start();
+    log.info('💬 Slack bot started successfully.');
+  } else {
+    log.info('ℹ️  Slack credentials not provided. Slack bot will not start.');
+  }
+
+  if (config.discord) {
+    // TODO: Initialize Discord bot here
+    log.info('🎮 Discord credentials provided. (Discord bot initialization coming in later phase)');
+  } else {
+    log.info('ℹ️  Discord credentials not provided. Discord bot will not start.');
+  }
 
   startPoller({
-    slackClient: app.client,
+    slackClient: slackApp?.client ?? null, // Will need to update poller to handle Discord too
     radarrClient,
     sonarrClient: sonarrConfig?.sonarrClient ?? null,
   });
 
   log.info('⚡️ Movie Bot is running!');
-  log.info(`   Request channel: ${config.slack.requestChannelId}`);
-  log.info(`   Approval channel: ${config.slack.approvalChannelId}`);
-  log.info(`   Approvers: ${config.slack.approverSlackIds.join(', ')}`);
+  if (config.slack) {
+    log.info(`   Slack Request channel: ${config.slack.requestChannelId}`);
+    log.info(`   Slack Approval channel: ${config.slack.approvalChannelId}`);
+    log.info(`   Slack Approvers: ${config.slack.approverSlackIds.join(', ')}`);
+  }
+  if (config.discord) {
+    log.info(`   Discord Request channel: ${config.discord.requestChannelId}`);
+    log.info(`   Discord Approval channel: ${config.discord.approvalChannelId}`);
+    log.info(`   Discord Approvers: ${config.discord.approverDiscordIds.join(', ')}`);
+  }
   log.info(`   Sonarr: ${config.sonarr ? 'enabled' : 'disabled'}`);
 
   const shutdown = async (signal: string): Promise<void> => {
     log.info(`\n${signal} received. Shutting down gracefully...`);
     stopPoller();
-    await app.stop();
+    if (slackApp) await slackApp.stop();
+    // TODO: Stop Discord bot here
     process.exit(0);
   };
 
