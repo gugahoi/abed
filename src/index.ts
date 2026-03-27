@@ -4,7 +4,7 @@ import { SonarrClient } from './sonarr/client';
 import { createSlackApp } from './slack/index';
 import { getDb } from './db/index';
 import { startPoller, stopPoller } from './poller';
-import { createLogger } from './logger';
+import { createLogger, _setSecrets } from './logger';
 
 const log = createLogger('app');
 
@@ -18,6 +18,14 @@ async function main(): Promise<void> {
   }
 
   const radarrClient = new RadarrClient(config.radarr.url, config.radarr.apiKey);
+
+  _setSecrets([
+    config.radarr.apiKey,
+    config.sonarr?.apiKey,
+    config.slack?.botToken,
+    config.slack?.appToken,
+    config.discord?.botToken,
+  ].filter((s): s is string => !!s));
 
   log.info('🔍 Checking Radarr connection...');
   try {

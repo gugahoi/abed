@@ -1,6 +1,6 @@
-import { describe, it, expect, mock, beforeEach } from 'bun:test';
+import { describe, it, expect, mock, beforeEach, afterEach } from 'bun:test';
 import { SonarrClient } from '../../src/sonarr/client';
-import { _setLoggerOutput } from '../../src/logger';
+import { _setLoggerOutput, _setSecrets, _resetSecrets } from '../../src/logger';
 
 const BASE_URL = 'http://localhost:8989';
 const API_KEY = 'test-api-key';
@@ -25,6 +25,8 @@ describe('SonarrClient', () => {
 
   beforeEach(() => {
     _setLoggerOutput({ debug: () => {}, info: () => {}, warn: () => {}, error: () => {} });
+    _resetSecrets();
+    delete process.env['LOG_LEVEL'];
     client = new SonarrClient(BASE_URL, API_KEY);
   });
 
@@ -50,13 +52,14 @@ describe('SonarrClient', () => {
 
   it('addSeries - sends POST with correct payload', async () => {
     let capturedBody: unknown;
+    const responseData = { id: 1, title: 'Breaking Bad', year: 2008, tvdbId: 81189, monitored: true, status: 'ended' };
     globalThis.fetch = asFetch(mock(async (_url: string | URL | Request, opts?: RequestInit) => {
       capturedBody = JSON.parse(opts?.body as string);
       return {
         ok: true,
         status: 201,
-        json: () => Promise.resolve({ id: 1, title: 'Breaking Bad', year: 2008, tvdbId: 81189, monitored: true, status: 'ended' }),
-        text: () => Promise.resolve(''),
+        json: () => Promise.resolve(responseData),
+        text: () => Promise.resolve(JSON.stringify(responseData)),
       } as Response;
     }));
 
@@ -108,5 +111,91 @@ describe('SonarrClient', () => {
 
     const result = await client.getRootFolders();
     expect(result[0]!.path).toBe('/tv');
+  });
+});
+
+describe('SonarrClient debug logging', () => {
+  let client: SonarrClient;
+  const captured: string[] = [];
+  const mockSink = {
+    debug: mock((msg: string) => { captured.push(msg); }),
+    info:  mock((msg: string) => { captured.push(msg); }),
+    warn:  mock((msg: string) => { captured.push(msg); }),
+    error: mock((msg: string) => { captured.push(msg); }),
+  };
+
+  beforeEach(() => {
+    captured.length = 0;
+    mockSink.debug.mockClear();
+    mockSink.info.mockClear();
+    mockSink.warn.mockClear();
+    mockSink.error.mockClear();
+    _resetSecrets();
+    process.env['LOG_LEVEL'] = 'debug';
+    _setLoggerOutput(mockSink);
+    client = new SonarrClient(BASE_URL, API_KEY);
+  });
+
+  afterEach(() => {
+    delete process.env['LOG_LEVEL'];
+    _resetSecrets();
+    _setLoggerOutput({ debug: () => {}, info: () => {}, warn: () => {}, error: () => {} });
+  });
+
+  it('logs HTTP request and response at debug level', async () => {
+    globalThis.fetch = mockFetch([{ id: 1, title: 'Test', year: 2024, tvdbId: 1, titleSlug: 'test', seasons: [], images: [] }]);
+
+    await client.searchSeries('test');
+
+    const requestLog = captured.find(m => m.includes('HTTP request'));
+    const responseLog = captured.find(m => m.includes('HTTP response'));
+    expect(requestLog).toBeDefined();
+    expect(requestLog).toContain('method="GET"');
+    expect(requestLog).toContain('path="/series/lookup"');
+    expect(responseLog).toBeDefined();
+    expect(responseLog).toContain('status=200');
+    expect(responseLog).toContain('elapsed=');
+  });
+
+  it('does not log at debug level when LOG_LEVEL=info', async () => {
+    process.env['LOG_LEVEL'] = 'info';
+    globalThis.fetch = mockFetch([]);
+
+    await client.searchSeries('test');
+
+    expect(mockSink.debug).not.toHaveBeenCalled();
+  });
+
+  it('redacts secrets in response body preview', async () => {
+    _setSecrets([API_KEY]);
+    globalThis.fetch = mockFetch({ secret: API_KEY });
+
+    await client.getQualityProfiles();
+
+    const responseLog = captured.find(m => m.includes('HTTP response'));
+    expect(responseLog).toBeDefined();
+    expect(responseLog).not.toContain(API_KEY);
+    expect(responseLog).toContain('[REDACTED]');
+  });
+
+  it('truncates long response bodies', async () => {
+    const longData = { data: 'x'.repeat(600) };
+    globalThis.fetch = mockFetch(longData);
+
+    await client.getQualityProfiles();
+
+    const responseLog = captured.find(m => m.includes('HTTP response'));
+    expect(responseLog).toBeDefined();
+    expect(responseLog).toContain('...(truncated)');
+  });
+
+  it('includes elapsed time in error logs', async () => {
+    globalThis.fetch = mockFetch({ message: 'Not Found' }, 404);
+
+    await expect(client.searchSeries('test')).rejects.toThrow('Sonarr API error 404');
+
+    const errorLog = captured.find(m => m.includes('Sonarr API error'));
+    expect(errorLog).toBeDefined();
+    expect(errorLog).toContain('elapsed=');
   });
 });

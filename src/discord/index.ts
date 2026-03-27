@@ -44,7 +44,7 @@ export async function createDiscordApp(deps: DiscordAppDeps, radarrClient: Radar
 
   const rest = new REST({ version: '10' }).setToken(deps.botToken);
 
-  client.once('ready', async () => {
+  client.once('clientReady', async () => {
     log.info(`Discord bot ready! Logged in as ${client.user?.tag}`);
 
     try {
