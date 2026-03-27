@@ -8,6 +8,12 @@ export class RadarrClient {
 
   private async request<T>(path: string, options?: RequestInit): Promise<T> {
     const url = `${this.baseUrl}/api/v3${path}`;
+    const method = options?.method ?? 'GET';
+    const safePath = path.split('?')[0] ?? path;
+    const startTime = performance.now();
+
+    log.debug('HTTP request', { method, path: safePath });
+
     const response = await fetch(url, {
       ...options,
       headers: {
@@ -16,14 +22,21 @@ export class RadarrClient {
         ...options?.headers,
       },
     });
+
+    const responseText = await response.text();
+    const elapsed = `${Math.round(performance.now() - startTime)}ms`;
+
     if (!response.ok) {
-      const body = await response.text();
-      const method = options?.method ?? 'GET';
-      const safePath = path.split('?')[0] ?? path;
-      log.error('Radarr API error', { method, path: safePath, status: response.status });
-      throw new Error(`Radarr API error ${response.status}: ${body}`);
+      log.error('Radarr API error', { method, path: safePath, status: response.status, elapsed });
+      throw new Error(`Radarr API error ${response.status}: ${responseText}`);
     }
-    return response.json() as Promise<T>;
+
+    const bodyPreview = responseText.length > 512
+      ? responseText.slice(0, 512) + '...(truncated)'
+      : responseText;
+    log.debug('HTTP response', { method, path: safePath, status: response.status, elapsed, bodyPreview });
+
+    return JSON.parse(responseText) as T;
   }
 
   async searchMovies(query: string): Promise<RadarrSearchResult[]> {

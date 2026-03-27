@@ -1,8 +1,8 @@
 import type { App } from '@slack/bolt';
 import type { RadarrClient } from '../../radarr/client';
 import { buildSearchResultsMessage } from '../messages/index';
-import { storeResults } from '../searchCache';
-import { submitMovieForApproval } from '../helpers/submitForApproval';
+import { storeResults } from '../../core/searchCache';
+import { submitMovieForApproval } from '../../core/helpers/submitForApproval';
 import { createLogger } from '../../logger';
 
 type MovieCommandDeps = {

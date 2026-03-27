@@ -42,6 +42,7 @@ function initSchema(db: Database): void {
       status TEXT NOT NULL DEFAULT 'pending',
       slack_message_ts TEXT,
       downloaded_notified INTEGER NOT NULL DEFAULT 0,
+      platform TEXT NOT NULL DEFAULT 'slack',
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
       updated_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
@@ -61,6 +62,7 @@ function initSchema(db: Database): void {
       status TEXT NOT NULL DEFAULT 'pending',
       slack_message_ts TEXT,
       downloaded_notified INTEGER NOT NULL DEFAULT 0,
+      platform TEXT NOT NULL DEFAULT 'slack',
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
       updated_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
@@ -70,6 +72,21 @@ function initSchema(db: Database): void {
   `);
 
   migrateDownloadedNotified(db);
+  migratePlatform(db);
+}
+
+function migratePlatform(db: Database): void {
+  const columns = db.prepare<{ name: string }, []>(`PRAGMA table_info('requests')`).all();
+  const hasColumn = columns.some((c) => c.name === 'platform');
+  if (!hasColumn) {
+    db.exec(`ALTER TABLE requests ADD COLUMN platform TEXT NOT NULL DEFAULT 'slack'`);
+  }
+
+  const tvColumns = db.prepare<{ name: string }, []>(`PRAGMA table_info('tv_requests')`).all();
+  const tvHasColumn = tvColumns.some((c) => c.name === 'platform');
+  if (!tvHasColumn) {
+    db.exec(`ALTER TABLE tv_requests ADD COLUMN platform TEXT NOT NULL DEFAULT 'slack'`);
+  }
 }
 
 function migrateDownloadedNotified(db: Database): void {
@@ -112,9 +129,9 @@ export function markTvDownloadNotified(id: number): void {
 
 export function createRequest(input: CreateRequestInput): MovieRequest {
   const db = getDb();
-  const stmt = db.prepare<MovieRequest, [string, number, string | null, number, string | null, string, string | null]>(`
-    INSERT INTO requests (movie_title, tmdb_id, imdb_id, year, poster_url, requester_slack_id, slack_message_ts)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
+  const stmt = db.prepare<MovieRequest, [string, number, string | null, number, string | null, string, string | null, string]>(`
+    INSERT INTO requests (movie_title, tmdb_id, imdb_id, year, poster_url, requester_slack_id, slack_message_ts, platform)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     RETURNING *
   `);
   const result = stmt.get(
@@ -125,6 +142,7 @@ export function createRequest(input: CreateRequestInput): MovieRequest {
     input.poster_url ?? null,
     input.requester_slack_id,
     input.slack_message_ts ?? null,
+    input.platform ?? 'slack'
   );
   if (!result) throw new Error('Failed to create request');
   return result;
@@ -182,9 +200,9 @@ export function updateRequestStatus(input: UpdateRequestStatusInput): MovieReque
 
 export function createTvRequest(input: CreateTvRequestInput): TvRequest {
   const db = getDb();
-  const stmt = db.prepare<TvRequest, [string, number, number, string | null, string, string | null]>(`
-    INSERT INTO tv_requests (show_title, tvdb_id, year, poster_url, requester_slack_id, slack_message_ts)
-    VALUES (?, ?, ?, ?, ?, ?)
+  const stmt = db.prepare<TvRequest, [string, number, number, string | null, string, string | null, string]>(`
+    INSERT INTO tv_requests (show_title, tvdb_id, year, poster_url, requester_slack_id, slack_message_ts, platform)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
     RETURNING *
   `);
   const result = stmt.get(
@@ -194,6 +212,7 @@ export function createTvRequest(input: CreateTvRequestInput): TvRequest {
     input.poster_url ?? null,
     input.requester_slack_id,
     input.slack_message_ts ?? null,
+    input.platform ?? 'slack'
   );
   if (!result) throw new Error('Failed to create TV request');
   return result;

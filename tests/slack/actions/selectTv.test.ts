@@ -1,6 +1,6 @@
 import { describe, it, expect, mock, beforeEach } from 'bun:test';
 import { registerSelectTvAction } from '../../../src/slack/actions/selectTv';
-import { storeTvResults, clearTvResults } from '../../../src/slack/searchCache';
+import { storeTvResults, clearTvResults } from '../../../src/core/searchCache';
 import { _resetDb, getDb, getTvRequestByTvdbId } from '../../../src/db/index';
 import { ACTION_IDS } from '../../../src/slack/messages/index';
 import { _setLoggerOutput } from '../../../src/logger';
@@ -135,7 +135,7 @@ describe('selectTv action', () => {
     const { body, ack, respond, client } = mockActionPayload('81189');
     await app.getHandler(ACTION_IDS.SELECT_TV)!({ body, ack, respond, client });
 
-    const { getTvResults } = await import('../../../src/slack/searchCache');
+    const { getTvResults } = await import('../../../src/core/searchCache');
     expect(getTvResults('U_TEST')).toBeNull();
   });
 

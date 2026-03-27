@@ -1,6 +1,6 @@
-import { describe, it, expect, mock, beforeEach } from 'bun:test';
+import { describe, it, expect, mock, beforeEach, afterEach } from 'bun:test';
 import { RadarrClient } from '../../src/radarr/client';
-import { _setLoggerOutput } from '../../src/logger';
+import { _setLoggerOutput, _setSecrets, _resetSecrets } from '../../src/logger';
 
 const BASE_URL = 'http://localhost:7878';
 const API_KEY = 'test-api-key';
@@ -25,6 +25,8 @@ describe('RadarrClient', () => {
 
   beforeEach(() => {
     _setLoggerOutput({ debug: () => {}, info: () => {}, warn: () => {}, error: () => {} });
+    _resetSecrets();
+    delete process.env['LOG_LEVEL'];
     client = new RadarrClient(BASE_URL, API_KEY);
   });
 
@@ -50,13 +52,14 @@ describe('RadarrClient', () => {
 
   it('addMovie - sends POST with correct payload', async () => {
     let capturedBody: unknown;
+    const responseData = { id: 1, title: 'The Batman', year: 2022, tmdbId: 12345, monitored: true, status: 'announced' };
     globalThis.fetch = asFetch(mock(async (_url: string | URL | Request, opts?: RequestInit) => {
       capturedBody = JSON.parse(opts?.body as string);
       return {
         ok: true,
         status: 201,
-        json: () => Promise.resolve({ id: 1, title: 'The Batman', year: 2022, tmdbId: 12345, monitored: true, status: 'announced' }),
-        text: () => Promise.resolve(''),
+        json: () => Promise.resolve(responseData),
+        text: () => Promise.resolve(JSON.stringify(responseData)),
       } as Response;
     }));
 
@@ -106,5 +109,91 @@ describe('RadarrClient', () => {
 
     const result = await client.getRootFolders();
     expect(result[0]!.path).toBe('/movies');
+  });
+});
+
+describe('RadarrClient debug logging', () => {
+  let client: RadarrClient;
+  const captured: string[] = [];
+  const mockSink = {
+    debug: mock((msg: string) => { captured.push(msg); }),
+    info:  mock((msg: string) => { captured.push(msg); }),
+    warn:  mock((msg: string) => { captured.push(msg); }),
+    error: mock((msg: string) => { captured.push(msg); }),
+  };
+
+  beforeEach(() => {
+    captured.length = 0;
+    mockSink.debug.mockClear();
+    mockSink.info.mockClear();
+    mockSink.warn.mockClear();
+    mockSink.error.mockClear();
+    _resetSecrets();
+    process.env['LOG_LEVEL'] = 'debug';
+    _setLoggerOutput(mockSink);
+    client = new RadarrClient(BASE_URL, API_KEY);
+  });
+
+  afterEach(() => {
+    delete process.env['LOG_LEVEL'];
+    _resetSecrets();
+    _setLoggerOutput({ debug: () => {}, info: () => {}, warn: () => {}, error: () => {} });
+  });
+
+  it('logs HTTP request and response at debug level', async () => {
+    globalThis.fetch = mockFetch([{ id: 1, title: 'Test', year: 2024, tmdbId: 1, titleSlug: 'test', images: [] }]);
+
+    await client.searchMovies('test');
+
+    const requestLog = captured.find(m => m.includes('HTTP request'));
+    const responseLog = captured.find(m => m.includes('HTTP response'));
+    expect(requestLog).toBeDefined();
+    expect(requestLog).toContain('method="GET"');
+    expect(requestLog).toContain('path="/movie/lookup"');
+    expect(responseLog).toBeDefined();
+    expect(responseLog).toContain('status=200');
+    expect(responseLog).toContain('elapsed=');
+  });
+
+  it('does not log at debug level when LOG_LEVEL=info', async () => {
+    process.env['LOG_LEVEL'] = 'info';
+    globalThis.fetch = mockFetch([]);
+
+    await client.searchMovies('test');
+
+    expect(mockSink.debug).not.toHaveBeenCalled();
+  });
+
+  it('redacts secrets in response body preview', async () => {
+    _setSecrets([API_KEY]);
+    globalThis.fetch = mockFetch({ secret: API_KEY });
+
+    await client.getQualityProfiles();
+
+    const responseLog = captured.find(m => m.includes('HTTP response'));
+    expect(responseLog).toBeDefined();
+    expect(responseLog).not.toContain(API_KEY);
+    expect(responseLog).toContain('[REDACTED]');
+  });
+
+  it('truncates long response bodies', async () => {
+    const longData = { data: 'x'.repeat(600) };
+    globalThis.fetch = mockFetch(longData);
+
+    await client.getQualityProfiles();
+
+    const responseLog = captured.find(m => m.includes('HTTP response'));
+    expect(responseLog).toBeDefined();
+    expect(responseLog).toContain('...(truncated)');
+  });
+
+  it('includes elapsed time in error logs', async () => {
+    globalThis.fetch = mockFetch({ message: 'Not Found' }, 404);
+
+    await expect(client.searchMovies('test')).rejects.toThrow('Radarr API error 404');
+
+    const errorLog = captured.find(m => m.includes('Radarr API error'));
+    expect(errorLog).toBeDefined();
+    expect(errorLog).toContain('elapsed=');
   });
 });

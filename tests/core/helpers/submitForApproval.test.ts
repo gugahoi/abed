@@ -1,5 +1,5 @@
 import { describe, it, expect, mock, beforeEach } from 'bun:test';
-import { submitMovieForApproval } from '../../../src/slack/helpers/submitForApproval';
+import { submitMovieForApproval } from '../../../src/core/helpers/submitForApproval';
 import { _resetDb, getDb, getRequestByTmdbId } from '../../../src/db/index';
 import { _setLoggerOutput } from '../../../src/logger';
 

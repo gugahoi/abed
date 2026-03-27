@@ -1,6 +1,6 @@
 import { describe, it, expect, mock, beforeEach } from 'bun:test';
 import { registerMovieCommand } from '../../../src/slack/commands/movie';
-import { getResults } from '../../../src/slack/searchCache';
+import { getResults } from '../../../src/core/searchCache';
 import { _resetDb, getDb } from '../../../src/db/index';
 import { _setLoggerOutput } from '../../../src/logger';
 

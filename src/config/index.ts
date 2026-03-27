@@ -5,7 +5,15 @@ export type Config = {
     requestChannelId: string;
     approvalChannelId: string;
     approverSlackIds: string[];
-  };
+  } | null;
+  discord: {
+    botToken: string;
+    clientId: string;
+    guildId: string;
+    requestChannelId: string;
+    approvalChannelId: string;
+    approverDiscordIds: string[];
+  } | null;
   radarr: {
     url: string;
     apiKey: string;
@@ -29,13 +37,45 @@ function loadConfig(): Config {
     return val ?? '';
   }
 
-  const slackBotToken = required('SLACK_BOT_TOKEN');
-  const slackAppToken = required('SLACK_APP_TOKEN');
-  const slackRequestChannelId = required('SLACK_REQUEST_CHANNEL_ID');
-  const slackApprovalChannelId = required('SLACK_APPROVAL_CHANNEL_ID');
+  // Determine which platform is configured
+  const hasSlack = !!(process.env['SLACK_BOT_TOKEN'] || process.env['SLACK_APP_TOKEN']);
+  const hasDiscord = !!(process.env['DISCORD_BOT_TOKEN'] || process.env['DISCORD_CLIENT_ID']);
+
+  if (!hasSlack && !hasDiscord) {
+    throw new Error('Must configure either Slack or Discord credentials.');
+  }
+
+  let slack: Config['slack'] = null;
+  if (hasSlack) {
+    slack = {
+      botToken: required('SLACK_BOT_TOKEN'),
+      appToken: required('SLACK_APP_TOKEN'),
+      requestChannelId: required('SLACK_REQUEST_CHANNEL_ID'),
+      approvalChannelId: required('SLACK_APPROVAL_CHANNEL_ID'),
+      approverSlackIds: required('APPROVER_SLACK_IDS')
+        .split(',')
+        .map((id) => id.trim())
+        .filter((id) => id.length > 0),
+    };
+  }
+
+  let discord: Config['discord'] = null;
+  if (hasDiscord) {
+    discord = {
+      botToken: required('DISCORD_BOT_TOKEN'),
+      clientId: required('DISCORD_CLIENT_ID'),
+      guildId: required('DISCORD_GUILD_ID'),
+      requestChannelId: required('DISCORD_REQUEST_CHANNEL_ID'),
+      approvalChannelId: required('DISCORD_APPROVAL_CHANNEL_ID'),
+      approverDiscordIds: required('APPROVER_DISCORD_IDS')
+        .split(',')
+        .map((id) => id.trim())
+        .filter((id) => id.length > 0),
+    };
+  }
+
   const radarrUrlRaw = required('RADARR_URL');
   const radarrApiKey = required('RADARR_API_KEY');
-  const approverSlackIdsRaw = required('APPROVER_SLACK_IDS');
   const radarrQualityProfileIdRaw = required('RADARR_QUALITY_PROFILE_ID');
   const radarrRootFolderPath = required('RADARR_ROOT_FOLDER_PATH');
 
@@ -81,16 +121,8 @@ function loadConfig(): Config {
   }
 
   return {
-    slack: {
-      botToken: slackBotToken,
-      appToken: slackAppToken,
-      requestChannelId: slackRequestChannelId,
-      approvalChannelId: slackApprovalChannelId,
-      approverSlackIds: approverSlackIdsRaw
-        .split(',')
-        .map((id) => id.trim())
-        .filter((id) => id.length > 0),
-    },
+    slack,
+    discord,
     radarr: {
       url: radarrUrlRaw.replace(/\/+$/, ''),
       apiKey: radarrApiKey,
