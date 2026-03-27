@@ -12,7 +12,7 @@
   <Privileged>false</Privileged>
   <Support>https://github.com/gugahoi/abed/issues</Support>
   <Project>https://github.com/gugahoi/abed</Project>
-  <Overview>Slack bot for movie/TV show requests with Radarr/Sonarr approval workflow. Users run /movie or /tv commands in Slack, select from search results, and approvers can approve or reject requests. Uses Socket Mode — no ports required.</Overview>
+  <Overview>Slack and Discord bot for movie/TV show requests with Radarr/Sonarr approval workflow. Users run /movie or /tv commands, select from search results, and approvers can approve or reject requests. Slack uses Socket Mode — no ports required. At least one platform (Slack or Discord) must be configured.</Overview>
   <Category>Tools: MediaApp:Other</Category>
   <WebUI/>
   <Icon>https://raw.githubusercontent.com/gugahoi/abed/main/unraid/abed-icon.png</Icon>
@@ -20,7 +20,7 @@
   <DonateText/>
   <DonateLink/>
   <DonateImg/>
-  <Description>Slack bot for movie/TV show requests with Radarr/Sonarr approval workflow. Uses Socket Mode — no ports required.</Description>
+  <Description>Slack and Discord bot for movie/TV show requests with Radarr/Sonarr approval workflow. Slack uses Socket Mode — no ports required. At least one platform (Slack or Discord) must be configured.</Description>
   <Config Name="Data Directory" Target="/app/data" Default="/mnt/user/appdata/abed" Mode="rw" Description="Persistent storage for SQLite database" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/abed</Config>
   <Config Name="Slack Bot Token" Target="SLACK_BOT_TOKEN" Default="" Mode="" Description="[Optional if Discord is used] Bot User OAuth Token (starts with xoxb-)" Type="Variable" Display="always" Required="false" Mask="true"/>
   <Config Name="Slack App Token" Target="SLACK_APP_TOKEN" Default="" Mode="" Description="[Optional if Discord is used] App-Level Token for Socket Mode (starts with xapp-)" Type="Variable" Display="always" Required="false" Mask="true"/>
@@ -41,6 +41,7 @@
   <Config Name="PUID" Target="PUID" Default="99" Mode="" Description="User ID for file permissions" Type="Variable" Display="advanced" Required="false" Mask="false">99</Config>
   <Config Name="PGID" Target="PGID" Default="100" Mode="" Description="Group ID for file permissions" Type="Variable" Display="advanced" Required="false" Mask="false">100</Config>
   <Config Name="Timezone" Target="TZ" Default="America/New_York" Mode="" Description="Container timezone (e.g. America/New_York, Europe/London)" Type="Variable" Display="advanced" Required="false" Mask="false"/>
+  <Config Name="Log Level" Target="LOG_LEVEL" Default="info" Mode="" Description="Log verbosity: debug | info | warn | error. Set to debug to see HTTP request/response details (secrets are auto-redacted)" Type="Variable" Display="advanced" Required="false" Mask="false">info</Config>
   <Config Name="Sonarr URL" Target="SONARR_URL" Default="" Mode="" Description="[Optional — set all 4 Sonarr fields or none] Sonarr base URL (e.g. http://192.168.1.100:8989)" Type="Variable" Display="advanced" Required="false" Mask="false"/>
   <Config Name="Sonarr API Key" Target="SONARR_API_KEY" Default="" Mode="" Description="[Optional — set all 4 Sonarr fields or none] Sonarr API key from Settings > General" Type="Variable" Display="advanced" Required="false" Mask="true"/>
   <Config Name="Sonarr Quality Profile ID" Target="SONARR_QUALITY_PROFILE_ID" Default="" Mode="" Description="[Optional — set all 4 Sonarr fields or none] Numeric ID of the Sonarr quality profile" Type="Variable" Display="advanced" Required="false" Mask="false"/>
