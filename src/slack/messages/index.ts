@@ -345,6 +345,15 @@ export type MyRequestItem = {
   createdAt: string;
 };
 
+export type QueueItem = {
+  type: 'movie' | 'tv';
+  title: string;
+  year: number;
+  status: string;
+  createdAt: string;
+  requesterId: string;
+};
+
 const STATUS_EMOJI: Record<string, string> = {
   pending: '⏳',
   approved: '✅',
@@ -395,6 +404,49 @@ export function buildMyRequestsMessage(requests: MyRequestItem[]): Block[] {
       text: {
         type: 'mrkdwn' as const,
         text: `${typeEmoji} *${req.title}* (${req.year})\n${statusEmoji} ${statusLabel} · ${date}`,
+      },
+    };
+  });
+
+  return [header, divider, ...items];
+}
+
+export function buildQueueMessage(requests: QueueItem[], statusFilter?: string): Block[] {
+  if (requests.length === 0) {
+    const filterNote = statusFilter ? ` with status *${statusFilter}*` : '';
+    return [
+      {
+        type: 'section',
+        text: {
+          type: 'mrkdwn',
+          text: `:clipboard: No requests found${filterNote}.`,
+        },
+      },
+    ];
+  }
+
+  const filterNote = statusFilter ? ` — ${statusFilter}` : '';
+  const header: Block = {
+    type: 'section',
+    text: {
+      type: 'mrkdwn',
+      text: `:clipboard: *Request Queue${filterNote}* (${requests.length})`,
+    },
+  };
+
+  const divider: Block = { type: 'divider' };
+
+  const items: Block[] = requests.map((req) => {
+    const typeEmoji = req.type === 'movie' ? ':clapper:' : ':tv:';
+    const statusEmoji = STATUS_EMOJI[req.status] ?? '❓';
+    const statusLabel = STATUS_LABEL[req.status] ?? req.status;
+    const date = req.createdAt.split('T')[0] ?? req.createdAt;
+
+    return {
+      type: 'section' as const,
+      text: {
+        type: 'mrkdwn' as const,
+        text: `${typeEmoji} *${req.title}* (${req.year})\n${statusEmoji} ${statusLabel} · ${date} · Requested by <@${req.requesterId}>`,
       },
     };
   });

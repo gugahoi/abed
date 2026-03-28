@@ -10,6 +10,7 @@ import { registerSelectTvAction } from './actions/selectTv';
 import { registerApproveTvAction } from './actions/approveTv';
 import { registerRejectTvAction } from './actions/rejectTv';
 import { registerMyRequestsCommand } from './commands/myrequests';
+import { registerQueueCommand } from './commands/queue';
 
 export function createSlackApp(config: {
   botToken: string;
@@ -69,6 +70,7 @@ export function createSlackApp(config: {
    }
 
    registerMyRequestsCommand(app);
+   registerQueueCommand(app);
 
    return app;
 }

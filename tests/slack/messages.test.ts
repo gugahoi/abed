@@ -9,11 +9,12 @@ import {
   buildTvApprovedMessage,
   buildTvRejectedMessage,
   buildMyRequestsMessage,
+  buildQueueMessage,
   ACTION_IDS,
 } from '../../src/slack/messages/index';
 import type { RadarrSearchResult } from '../../src/radarr/types';
 import type { SonarrSearchResult } from '../../src/sonarr/types';
-import type { MyRequestItem } from '../../src/slack/messages/index';
+import type { MyRequestItem, QueueItem } from '../../src/slack/messages/index';
 
 const mockMovie: RadarrSearchResult = {
   title: 'The Batman',
@@ -433,5 +434,74 @@ describe('buildMyRequestsMessage', () => {
     expect(blocks).toHaveLength(4); // header + divider + 2 items
     expect((blocks[2] as any).text.text).toContain(':tv:');
     expect((blocks[3] as any).text.text).toContain(':clapper:');
+  });
+});
+
+describe('buildQueueMessage', () => {
+  it('returns no-requests block when empty array', () => {
+    const blocks = buildQueueMessage([]);
+    expect(blocks).toHaveLength(1);
+    expect((blocks[0] as any).text.text).toContain('No requests found');
+  });
+
+  it('includes statusFilter in empty-state message when provided', () => {
+    const blocks = buildQueueMessage([], 'pending');
+    expect((blocks[0] as any).text.text).toContain('pending');
+  });
+
+  it('returns header + divider + item blocks for requests', () => {
+    const items: QueueItem[] = [
+      { type: 'movie', title: 'The Batman', year: 2022, status: 'approved', createdAt: '2024-01-15T10:30:00', requesterId: 'U123' },
+    ];
+    const blocks = buildQueueMessage(items);
+    expect(blocks).toHaveLength(3);
+    expect(blocks[0]!.type).toBe('section');
+    expect(blocks[1]!.type).toBe('divider');
+    expect(blocks[2]!.type).toBe('section');
+  });
+
+  it('items include requester mention', () => {
+    const items: QueueItem[] = [
+      { type: 'movie', title: 'Dune', year: 2021, status: 'pending', createdAt: '2024-01-15T10:30:00', requesterId: 'U_REQ_123' },
+    ];
+    const blocks = buildQueueMessage(items);
+    const itemBlock = blocks[2] as any;
+    expect(itemBlock.text.text).toContain('<@U_REQ_123>');
+  });
+
+  it('shows movie emoji for movie items', () => {
+    const items: QueueItem[] = [
+      { type: 'movie', title: 'Inception', year: 2010, status: 'pending', createdAt: '2024-01-15T10:30:00', requesterId: 'U1' },
+    ];
+    const blocks = buildQueueMessage(items);
+    const itemBlock = blocks[2] as any;
+    expect(itemBlock.text.text).toContain(':clapper:');
+  });
+
+  it('shows TV emoji for tv items', () => {
+    const items: QueueItem[] = [
+      { type: 'tv', title: 'Breaking Bad', year: 2008, status: 'pending', createdAt: '2024-01-15T10:30:00', requesterId: 'U1' },
+    ];
+    const blocks = buildQueueMessage(items);
+    const itemBlock = blocks[2] as any;
+    expect(itemBlock.text.text).toContain(':tv:');
+  });
+
+  it('shows statusFilter in header when provided', () => {
+    const items: QueueItem[] = [
+      { type: 'movie', title: 'Dune', year: 2021, status: 'pending', createdAt: '2024-01-15T10:30:00', requesterId: 'U1' },
+    ];
+    const blocks = buildQueueMessage(items, 'pending');
+    const header = blocks[0] as any;
+    expect(header.text.text).toContain('pending');
+  });
+
+  it('shows correct count in header', () => {
+    const items: QueueItem[] = [
+      { type: 'movie', title: 'Movie 1', year: 2020, status: 'pending', createdAt: '2024-01-01T00:00:00', requesterId: 'U1' },
+      { type: 'tv', title: 'Show 1', year: 2021, status: 'approved', createdAt: '2024-01-02T00:00:00', requesterId: 'U2' },
+    ];
+    const blocks = buildQueueMessage(items);
+    expect((blocks[0] as any).text.text).toContain('(2)');
   });
 });
