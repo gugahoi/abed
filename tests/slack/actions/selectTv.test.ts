@@ -17,7 +17,7 @@ function mockActionPayload(tvdbIdStr: string, userId = 'U_TEST') {
   return {
     body: {
       user: { id: userId },
-      actions: [{ action_id: ACTION_IDS.SELECT_TV, selected_option: { value: tvdbIdStr } }],
+      actions: [{ action_id: ACTION_IDS.SELECT_TV, value: tvdbIdStr }],
     },
     ack: mock(async () => {}),
     respond: mock(async (_: any) => {}),

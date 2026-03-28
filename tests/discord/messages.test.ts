@@ -1,14 +1,14 @@
 import { describe, expect, test } from 'bun:test';
 import {
-  buildSearchResultsEmbed,
   buildApprovalRequestEmbed,
   buildApprovedEmbed,
   buildRejectedEmbed,
-  buildTvSearchResultsEmbed,
   buildTvApprovalRequestEmbed,
   buildTvApprovedEmbed,
   buildTvRejectedEmbed,
   buildMyRequestsEmbed,
+  buildMovieCarouselPage,
+  buildTvCarouselPage,
 } from '../../src/discord/messages/index';
 
 import type { RadarrSearchResult } from '../../src/radarr/types';
@@ -17,28 +17,6 @@ import type { MovieRequest, TvRequest } from '../../src/db/types';
 
 describe('Discord Message Builders', () => {
   describe('Movie Messages', () => {
-    test('buildSearchResultsEmbed > returns no-results message when empty array', () => {
-      const msg = buildSearchResultsEmbed([]);
-      expect(msg.embeds.length).toBe(1);
-      expect(msg.embeds[0]!.data.description).toInclude('No results found');
-      expect(msg.components.length).toBe(0);
-    });
-
-    test('buildSearchResultsEmbed > returns embed + select menu for search results', () => {
-      const results: RadarrSearchResult[] = [{ title: 'The Matrix', year: 1999, tmdbId: 123, titleSlug: 'the-matrix', images: [] }];
-      const msg = buildSearchResultsEmbed(results);
-      
-      expect(msg.embeds.length).toBe(1);
-      expect(msg.embeds[0]!.data.title).toBe('Movie Search Results');
-      
-      expect(msg.components.length).toBe(1);
-      const row = msg.components[0]!.toJSON();
-      expect(row.components[0]!.type).toBe(3); // StringSelect
-      expect((row.components[0] as { custom_id: string }).custom_id).toBe('select_movie');
-      // @ts-ignore
-      expect(row.components[0].options[0].value).toBe('123');
-    });
-
     test('buildApprovalRequestEmbed > includes title, year, requester, and buttons', () => {
       const movie: RadarrSearchResult = { title: 'The Matrix', year: 1999, tmdbId: 123, remotePoster: 'http://img.com/a.jpg', overview: 'A great movie.', titleSlug: 'the-matrix', images: [] };
       const msg = buildApprovalRequestEmbed(movie, 'U123');
@@ -76,21 +54,6 @@ describe('Discord Message Builders', () => {
   });
 
   describe('TV Messages', () => {
-    test('buildTvSearchResultsEmbed > returns no-results message when empty array', () => {
-      const msg = buildTvSearchResultsEmbed([]);
-      expect(msg.embeds[0]!.data.description).toInclude('No results found');
-    });
-
-    test('buildTvSearchResultsEmbed > returns embed + select menu for search results', () => {
-      const results: SonarrSearchResult[] = [{ title: 'Breaking Bad', year: 2008, tvdbId: 456, titleSlug: 'bb', seasons: [], images: [] }];
-      const msg = buildTvSearchResultsEmbed(results);
-      
-      const row = msg.components[0]!.toJSON();
-      expect((row.components[0] as { custom_id: string }).custom_id).toBe('select_tv');
-      // @ts-ignore
-      expect(row.components[0].options[0].value).toBe('456');
-    });
-
     test('buildTvApprovalRequestEmbed > includes buttons', () => {
       const show: SonarrSearchResult = { title: 'Breaking Bad', year: 2008, tvdbId: 456, titleSlug: 'bb', seasons: [], images: [] };
       const msg = buildTvApprovalRequestEmbed(show, 'U123');
@@ -134,6 +97,171 @@ describe('Discord Message Builders', () => {
       expect(embed.fields?.[0]!.value).toInclude('⏳ pending');
       expect(embed.fields?.[1]!.name).toInclude('📺 Breaking Bad (2008)');
       expect(embed.fields?.[1]!.value).toInclude('✅ approved');
+    });
+  });
+
+  describe('buildMovieCarouselPage', () => {
+    const mockMovie: RadarrSearchResult = {
+      title: 'The Matrix',
+      year: 1999,
+      tmdbId: 603,
+      titleSlug: 'the-matrix',
+      images: [],
+      overview: 'A computer hacker learns about the true nature of reality.',
+      remotePoster: 'https://example.com/matrix.jpg',
+      studio: 'Warner Bros',
+    };
+
+    test('no results → returns no-results embed with empty components', () => {
+      const result = buildMovieCarouselPage([], 0);
+      expect(result.embeds.length).toBe(1);
+      expect(result.embeds[0]!.data.description).toInclude('No results found');
+      expect(result.components.length).toBe(0);
+    });
+
+    test('single result → embed has title/year, both Prev and Next disabled, Select enabled', () => {
+      const result = buildMovieCarouselPage([mockMovie], 0);
+      const embed = result.embeds[0]!.data;
+      expect(embed.title).toBe('The Matrix (1999)');
+      expect(result.components.length).toBe(1);
+      const row = result.components[0]!.toJSON();
+      const prev = row.components[0] as { disabled?: boolean };
+      const next = row.components[1] as { disabled?: boolean };
+      const select = row.components[2] as { disabled?: boolean };
+      expect(prev.disabled).toBe(true);
+      expect(next.disabled).toBe(true);
+      expect(select.disabled).toBeFalsy();
+    });
+
+    test('multiple results, index 0 → Prev disabled, Next enabled, footer "Result 1 of N"', () => {
+      const results = [mockMovie, { ...mockMovie, title: 'The Matrix Reloaded', tmdbId: 604 }];
+      const result = buildMovieCarouselPage(results, 0);
+      const embed = result.embeds[0]!.data;
+      expect(embed.footer?.text).toBe('Result 1 of 2');
+      const row = result.components[0]!.toJSON();
+      const prev = row.components[0] as { disabled?: boolean };
+      const next = row.components[1] as { disabled?: boolean };
+      expect(prev.disabled).toBe(true);
+      expect(next.disabled).toBe(false);
+    });
+
+    test('multiple results, last index → Prev enabled, Next disabled, footer "Result N of N"', () => {
+      const results = [mockMovie, { ...mockMovie, title: 'The Matrix Reloaded', tmdbId: 604 }];
+      const result = buildMovieCarouselPage(results, 1);
+      const embed = result.embeds[0]!.data;
+      expect(embed.footer?.text).toBe('Result 2 of 2');
+      const row = result.components[0]!.toJSON();
+      const prev = row.components[0] as { disabled?: boolean };
+      const next = row.components[1] as { disabled?: boolean };
+      expect(prev.disabled).toBe(false);
+      expect(next.disabled).toBe(true);
+    });
+
+    test('middle index → both Prev and Next enabled', () => {
+      const results = [
+        mockMovie,
+        { ...mockMovie, title: 'The Matrix Reloaded', tmdbId: 604 },
+        { ...mockMovie, title: 'The Matrix Revolutions', tmdbId: 605 },
+      ];
+      const result = buildMovieCarouselPage(results, 1);
+      const row = result.components[0]!.toJSON();
+      const prev = row.components[0] as { disabled?: boolean };
+      const next = row.components[1] as { disabled?: boolean };
+      expect(prev.disabled).toBe(false);
+      expect(next.disabled).toBe(false);
+    });
+
+    test('movie with poster → embed has thumbnail', () => {
+      const result = buildMovieCarouselPage([mockMovie], 0);
+      expect(result.embeds[0]!.data.thumbnail?.url).toBe('https://example.com/matrix.jpg');
+    });
+
+    test('movie without poster → embed has no thumbnail', () => {
+      const noPoster: RadarrSearchResult = { ...mockMovie, remotePoster: undefined };
+      const result = buildMovieCarouselPage([noPoster], 0);
+      expect(result.embeds[0]!.data.thumbnail).toBeUndefined();
+    });
+
+    test('overview truncated to 1024 chars', () => {
+      const longOverview = 'x'.repeat(2000);
+      const movie: RadarrSearchResult = { ...mockMovie, overview: longOverview };
+      const result = buildMovieCarouselPage([movie], 0);
+      expect(result.embeds[0]!.data.description?.length).toBe(1024);
+    });
+
+    test('button customIds use movie_ prefix with index', () => {
+      const results = [mockMovie, { ...mockMovie, title: 'Sequel', tmdbId: 604 }];
+      const result = buildMovieCarouselPage(results, 1);
+      const row = result.components[0]!.toJSON();
+      expect((row.components[0] as { custom_id: string }).custom_id).toBe('movie_prev_1');
+      expect((row.components[1] as { custom_id: string }).custom_id).toBe('movie_next_1');
+      expect((row.components[2] as { custom_id: string }).custom_id).toBe('movie_request_1');
+    });
+  });
+
+  describe('buildTvCarouselPage', () => {
+    const mockShow: SonarrSearchResult = {
+      title: 'Breaking Bad',
+      year: 2008,
+      tvdbId: 81189,
+      titleSlug: 'breaking-bad',
+      network: 'AMC',
+      overview: 'A chemistry teacher turned drug lord.',
+      seasons: [
+        { seasonNumber: 0, monitored: false },
+        { seasonNumber: 1, monitored: true },
+        { seasonNumber: 2, monitored: true },
+        { seasonNumber: 3, monitored: true },
+      ],
+      images: [],
+    };
+
+    test('single result → correct fields (Network, Seasons, TVDB ID)', () => {
+      const result = buildTvCarouselPage([mockShow], 0);
+      const embed = result.embeds[0]!.data;
+      expect(embed.title).toBe('Breaking Bad (2008)');
+      const fields = embed.fields!;
+      expect(fields[0]!.name).toBe('Network');
+      expect(fields[0]!.value).toBe('AMC');
+      expect(fields[1]!.name).toBe('Seasons');
+      expect(fields[1]!.value).toBe('3');
+      expect(fields[2]!.name).toBe('TVDB ID');
+      expect(fields[2]!.value).toBe('81189');
+    });
+
+    test('TV with poster image → embed has thumbnail', () => {
+      const showWithPoster: SonarrSearchResult = {
+        ...mockShow,
+        images: [{ coverType: 'poster', remoteUrl: 'https://example.com/bb.jpg' }],
+      };
+      const result = buildTvCarouselPage([showWithPoster], 0);
+      expect(result.embeds[0]!.data.thumbnail?.url).toBe('https://example.com/bb.jpg');
+    });
+
+    test('TV without poster → no thumbnail', () => {
+      const result = buildTvCarouselPage([mockShow], 0);
+      expect(result.embeds[0]!.data.thumbnail).toBeUndefined();
+    });
+
+    test('seasons count excludes specials (seasonNumber 0)', () => {
+      const result = buildTvCarouselPage([mockShow], 0);
+      const fields = result.embeds[0]!.data.fields!;
+      expect(fields[1]!.value).toBe('3');
+    });
+
+    test('button customIds use tv_ prefix', () => {
+      const results = [mockShow, { ...mockShow, title: 'Better Call Saul', tvdbId: 99999 }];
+      const result = buildTvCarouselPage(results, 1);
+      const row = result.components[0]!.toJSON();
+      expect((row.components[0] as { custom_id: string }).custom_id).toBe('tv_prev_1');
+      expect((row.components[1] as { custom_id: string }).custom_id).toBe('tv_next_1');
+      expect((row.components[2] as { custom_id: string }).custom_id).toBe('tv_request_1');
+    });
+
+    test('no results → returns no-results embed with empty components', () => {
+      const result = buildTvCarouselPage([], 0);
+      expect(result.embeds[0]!.data.description).toInclude('No results found');
+      expect(result.components.length).toBe(0);
     });
   });
 });

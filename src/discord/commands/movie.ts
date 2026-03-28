@@ -1,7 +1,7 @@
 import { ChatInputCommandInteraction, SlashCommandBuilder, MessageFlags } from 'discord.js';
 import type { RadarrClient } from '../../radarr/client';
 import { getResults, storeResults } from '../../core/searchCache';
-import { buildSearchResultsEmbed } from '../messages/index';
+import { buildMovieCarouselPage } from '../messages/index';
 import { createLogger } from '../../logger';
 
 const log = createLogger('discord-movie-cmd');
@@ -39,12 +39,12 @@ export async function executeMovieCommand(
       return;
     }
 
-    // Cache results using platform prefix
-    storeResults(`discord_${userId}`, results.slice(0, 25));
+    const capped = results.slice(0, 25);
+    storeResults(`discord_${userId}`, capped);
 
     log.info('Search complete', { user: userId, query, results: results.length });
 
-    const messagePayload = buildSearchResultsEmbed(results);
+    const messagePayload = buildMovieCarouselPage(capped, 0);
     await interaction.editReply({
       content: `Search results for: **${query}**`,
       ...messagePayload,

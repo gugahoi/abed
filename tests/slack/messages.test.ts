@@ -10,7 +10,6 @@ import {
   buildTvRejectedMessage,
   buildMyRequestsMessage,
   ACTION_IDS,
-  BLOCK_IDS,
 } from '../../src/slack/messages/index';
 import type { RadarrSearchResult } from '../../src/radarr/types';
 import type { SonarrSearchResult } from '../../src/sonarr/types';
@@ -195,38 +194,93 @@ describe('buildTvSearchResultsMessage', () => {
     expect(blocks[0]).toMatchObject({ type: 'section' });
   });
 
-  it('returns section + actions blocks for search results', () => {
+  it('returns section + actions blocks per result', () => {
     const blocks = buildTvSearchResultsMessage([mockShow]);
     expect(blocks).toHaveLength(2);
     expect(blocks[0]!.type).toBe('section');
     expect(blocks[1]!.type).toBe('actions');
   });
 
-  it('actions block has static_select element', () => {
+  it('each result has a Request button with tvdbId value', () => {
     const blocks = buildTvSearchResultsMessage([mockShow]);
     const actionsBlock = blocks[1] as any;
-    expect(actionsBlock.block_id).toBe(BLOCK_IDS.TV_SELECT_ACTIONS);
-    expect(actionsBlock.elements[0].type).toBe('static_select');
+    expect(actionsBlock.elements[0].type).toBe('button');
     expect(actionsBlock.elements[0].action_id).toBe(ACTION_IDS.SELECT_TV);
+    expect(actionsBlock.elements[0].value).toBe('81189');
   });
 
-  it('uses tvdbId string as option value (stays within Slack 150-char limit)', () => {
+  it('shows poster as section accessory when available', () => {
     const blocks = buildTvSearchResultsMessage([mockShow]);
-    const actionsBlock = blocks[1] as any;
-    const optionValue = actionsBlock.elements[0].options[0].value;
-    expect(optionValue).toBe('81189');
-    expect(optionValue.length).toBeLessThanOrEqual(150);
+    const section = blocks[0] as any;
+    expect(section.accessory).toBeDefined();
+    expect(section.accessory.type).toBe('image');
+    expect(section.accessory.image_url).toBe('https://example.com/bb-poster.jpg');
   });
 
-  it('limits options to 25 shows', () => {
+  it('omits accessory when no poster available', () => {
+    const noPosterShow = { ...mockShow, images: [] };
+    const blocks = buildTvSearchResultsMessage([noPosterShow]);
+    const section = blocks[0] as any;
+    expect(section.accessory).toBeUndefined();
+  });
+
+  it('includes title, year, network, and season count in section text', () => {
+    const blocks = buildTvSearchResultsMessage([mockShow]);
+    const section = blocks[0] as any;
+    expect(section.text.text).toContain('Breaking Bad');
+    expect(section.text.text).toContain('2008');
+    expect(section.text.text).toContain('AMC');
+    expect(section.text.text).toContain('5 seasons');
+  });
+
+  it('excludes specials (season 0) from season count', () => {
+    const blocks = buildTvSearchResultsMessage([mockShow]);
+    const section = blocks[0] as any;
+    expect(section.text.text).toContain('5 seasons');
+  });
+
+  it('shows singular "season" for single-season shows', () => {
+    const singleSeason = { ...mockShow, seasons: [{ seasonNumber: 1, monitored: true }] };
+    const blocks = buildTvSearchResultsMessage([singleSeason]);
+    const section = blocks[0] as any;
+    expect(section.text.text).toContain('1 season');
+    expect(section.text.text).not.toContain('1 seasons');
+  });
+
+  it('truncates overview to 300 chars', () => {
+    const longOverview = 'A'.repeat(400);
+    const longShow = { ...mockShow, overview: longOverview };
+    const blocks = buildTvSearchResultsMessage([longShow]);
+    const section = blocks[0] as any;
+    expect(section.text.text).toContain('A'.repeat(300) + '...');
+    expect(section.text.text).not.toContain('A'.repeat(301));
+  });
+
+  it('limits results to 5 shows', () => {
     const manyShows = Array.from({ length: 30 }, (_, i) => ({
       ...mockShow,
       tvdbId: i + 1,
       title: `Show ${i + 1}`,
     }));
     const blocks = buildTvSearchResultsMessage(manyShows);
-    const actionsBlock = blocks[1] as any;
-    expect(actionsBlock.elements[0].options).toHaveLength(25);
+    const actionBlocks = blocks.filter(b => b.type === 'actions');
+    expect(actionBlocks).toHaveLength(5);
+  });
+
+  it('shows context header when more results than displayed', () => {
+    const manyShows = Array.from({ length: 10 }, (_, i) => ({
+      ...mockShow,
+      tvdbId: i + 1,
+      title: `Show ${i + 1}`,
+    }));
+    const blocks = buildTvSearchResultsMessage(manyShows);
+    expect(blocks[0]!.type).toBe('context');
+    expect((blocks[0] as any).elements[0].text).toContain('Showing 5 of 10');
+  });
+
+  it('does not show context header when 5 or fewer results', () => {
+    const blocks = buildTvSearchResultsMessage([mockShow]);
+    expect(blocks[0]!.type).toBe('section');
   });
 });
 

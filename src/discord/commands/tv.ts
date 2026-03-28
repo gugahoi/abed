@@ -1,7 +1,7 @@
 import { ChatInputCommandInteraction, SlashCommandBuilder, MessageFlags } from 'discord.js';
 import type { SonarrClient } from '../../sonarr/client';
 import { getTvResults, storeTvResults } from '../../core/searchCache';
-import { buildTvSearchResultsEmbed } from '../messages/index';
+import { buildTvCarouselPage } from '../messages/index';
 import { createLogger } from '../../logger';
 
 const log = createLogger('discord-tv-cmd');
@@ -47,11 +47,12 @@ export async function executeTvCommand(
     }
 
     // Cache results using platform prefix
-    storeTvResults(`discord_${userId}`, results.slice(0, 25));
+    const capped = results.slice(0, 25);
+    storeTvResults(`discord_${userId}`, capped);
 
     log.info('Search complete', { user: userId, query, results: results.length });
 
-    const messagePayload = buildTvSearchResultsEmbed(results);
+    const messagePayload = buildTvCarouselPage(capped, 0);
     await interaction.editReply({
       content: `Search results for: **${query}**`,
       ...messagePayload,

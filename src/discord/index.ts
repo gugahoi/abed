@@ -10,9 +10,9 @@ import { executeTvCommand, tvCommandDef } from './commands/tv';
 import { executeMyRequestsCommand, myRequestsCommandDef } from './commands/myrequests';
 
 // Actions
-import { handleSelectMovie, handleSelectTv } from './actions/select';
 import { handleApproveMovie, handleRejectMovie } from './actions/approveMovie';
 import { handleApproveTv, handleRejectTv } from './actions/approveTv';
+import { handleMovieCarouselNav, handleTvCarouselNav, handleMovieCarouselRequest, handleTvCarouselRequest } from './actions/navigate';
 
 const log = createLogger('discord');
 
@@ -82,20 +82,22 @@ export async function createDiscordApp(deps: DiscordAppDeps, radarrClient: Radar
         } else if (commandName === 'myrequests') {
           await executeMyRequestsCommand(interaction);
         }
-      } else if (interaction.isStringSelectMenu()) {
-        if (interaction.customId === 'select_movie') {
-          await handleSelectMovie(interaction, {
+      } else if (interaction.isButton()) {
+        if (interaction.customId.startsWith('movie_prev_') || interaction.customId.startsWith('movie_next_')) {
+          await handleMovieCarouselNav(interaction);
+        } else if (interaction.customId.startsWith('tv_prev_') || interaction.customId.startsWith('tv_next_')) {
+          await handleTvCarouselNav(interaction);
+        } else if (interaction.customId.startsWith('movie_request_')) {
+          await handleMovieCarouselRequest(interaction, {
             radarrClient,
             approvalChannelId: deps.approvalChannelId,
           });
-        } else if (interaction.customId === 'select_tv') {
-          await handleSelectTv(interaction, {
+        } else if (interaction.customId.startsWith('tv_request_')) {
+          await handleTvCarouselRequest(interaction, {
             sonarrClient: deps.sonarr?.sonarrClient,
             approvalChannelId: deps.approvalChannelId,
           });
-        }
-      } else if (interaction.isButton()) {
-        if (interaction.customId.startsWith('approve_movie_')) {
+        } else if (interaction.customId.startsWith('approve_movie_')) {
           await handleApproveMovie(interaction, {
             radarrClient,
             approverDiscordIds: deps.approverDiscordIds,

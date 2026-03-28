@@ -97,7 +97,7 @@ export function registerMovieCommand(app: App, deps: MovieCommandDeps): void {
         return;
       }
 
-      storeResults(command.user_id, results.slice(0, 25));
+      storeResults(command.user_id, results.slice(0, 5));
 
       log.info('Search complete', { user: command.user_id, query, results: results.length });
 

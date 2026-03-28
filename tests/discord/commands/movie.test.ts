@@ -38,7 +38,7 @@ describe('/movie command (Discord)', () => {
 
   test('responds with search results when Radarr finds movies', async () => {
     mockRadarrClient.searchMovies.mockResolvedValue([
-      { title: 'The Matrix', year: 1999, tmdbId: 603, remotePoster: 'url' },
+      { title: 'The Matrix', year: 1999, tmdbId: 603, remotePoster: 'https://image.tmdb.org/t/p/w500/poster.jpg', titleSlug: 'the-matrix', images: [], studio: 'Warner Bros' },
     ]);
     
     await executeMovieCommand(mockInteraction, { radarrClient: mockRadarrClient as unknown as RadarrClient });

@@ -51,7 +51,7 @@ export function registerTvCommand(app: App, deps: TvCommandDeps | null): void {
         return;
       }
 
-      storeTvResults(command.user_id, results.slice(0, 25));
+      storeTvResults(command.user_id, results.slice(0, 5));
 
       log.info('Search complete', { user: command.user_id, query, results: results.length });
 

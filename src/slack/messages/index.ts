@@ -1,4 +1,4 @@
-import type { Block, StaticSelectOption, ImageElement } from './types';
+import type { Block, ImageElement } from './types';
 import type { RadarrSearchResult } from '../../radarr/types';
 import type { SonarrSearchResult } from '../../sonarr/types';
 import { getMoviePosterUrl, getTvPosterUrl } from '../../core/helpers/posterUrl';
@@ -186,40 +186,57 @@ export function buildTvSearchResultsMessage(shows: SonarrSearchResult[]): Block[
     ];
   }
 
-  const options: StaticSelectOption[] = shows.slice(0, 25).map((show) => ({
-    text: {
-      type: 'plain_text' as const,
-      text: `${show.title} (${show.year})`,
-      emoji: true,
-    },
-    value: String(show.tvdbId),
-  }));
+  const capped = shows.slice(0, 5);
+  const blocks: Block[] = [];
 
-  return [
-    {
+  if (shows.length > 5) {
+    blocks.push({
+      type: 'context',
+      elements: [{ type: 'mrkdwn', text: `:tv: Showing 5 of ${shows.length} results` }],
+    });
+  }
+
+  for (const show of capped) {
+    const posterUrl = getTvPosterUrl(show);
+    const seasonCount = show.seasons.filter((s) => s.seasonNumber > 0).length;
+    const network = show.network ?? 'Unknown Network';
+    const overview = show.overview
+      ? show.overview.length > 300
+        ? `${show.overview.slice(0, 300)}...`
+        : show.overview
+      : '';
+    const meta = `${network} · ${seasonCount} season${seasonCount !== 1 ? 's' : ''}`;
+    const text = overview
+      ? `*${show.title} (${show.year})*\n${meta}\n${overview}`
+      : `*${show.title} (${show.year})*\n${meta}`;
+
+    const section: Block = {
       type: 'section',
-      text: {
-        type: 'mrkdwn',
-        text: ':tv: *Select the TV show you want to request:*',
-      },
-    },
-    {
+      text: { type: 'mrkdwn', text },
+      ...(posterUrl ? {
+        accessory: {
+          type: 'image',
+          image_url: posterUrl,
+          alt_text: `${show.title} poster`,
+        } satisfies ImageElement,
+      } : {}),
+    };
+    blocks.push(section);
+
+    blocks.push({
       type: 'actions',
-      block_id: BLOCK_IDS.TV_SELECT_ACTIONS,
       elements: [
         {
-          type: 'static_select',
-          placeholder: {
-            type: 'plain_text',
-            text: 'Choose a TV show...',
-            emoji: true,
-          },
+          type: 'button',
+          text: { type: 'plain_text', text: 'Request', emoji: true },
           action_id: ACTION_IDS.SELECT_TV,
-          options,
+          value: String(show.tvdbId),
         },
       ],
-    },
-  ];
+    });
+  }
+
+  return blocks;
 }
 
 export function buildTvApprovalRequestMessage(

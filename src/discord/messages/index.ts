@@ -3,52 +3,15 @@ import {
   ButtonBuilder,
   ButtonStyle,
   EmbedBuilder,
-  StringSelectMenuBuilder,
-  StringSelectMenuOptionBuilder,
 } from 'discord.js';
 import type { RadarrSearchResult } from '../../radarr/types';
 import type { SonarrSearchResult } from '../../sonarr/types';
 import type { MovieRequest, TvRequest } from '../../db/types';
+import { getMoviePosterUrl, getTvPosterUrl } from '../../core/helpers/posterUrl';
 
 // ============================================================================
 // MOVIE MESSAGES
 // ============================================================================
-
-export function buildSearchResultsEmbed(results: RadarrSearchResult[]) {
-  if (results.length === 0) {
-    return {
-      embeds: [
-        new EmbedBuilder()
-          .setColor('#ffcc00')
-          .setDescription('No results found. Try a different title.'),
-      ],
-      components: [],
-    };
-  }
-
-  const embed = new EmbedBuilder()
-    .setColor('#0099ff')
-    .setTitle('Movie Search Results')
-    .setDescription('Select a movie from the dropdown below to request it.');
-
-  const selectMenu = new StringSelectMenuBuilder()
-    .setCustomId('select_movie')
-    .setPlaceholder('Choose a movie...')
-    .addOptions(
-      results.slice(0, 25).map((r) =>
-        new StringSelectMenuOptionBuilder()
-          .setLabel(`${r.title} (${r.year})`)
-          .setValue(r.tmdbId.toString())
-      )
-    );
-
-  const row = new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(selectMenu);
-
-  return {
-    embeds: [embed],
-    components: [row],
-  };
-}
 
 export function buildApprovalRequestEmbed(movie: RadarrSearchResult, requesterDiscordId: string) {
   const embed = new EmbedBuilder()
@@ -120,43 +83,6 @@ export function buildRejectedEmbed(movie: MovieRequest, approverDiscordId: strin
 // TV MESSAGES
 // ============================================================================
 
-export function buildTvSearchResultsEmbed(results: SonarrSearchResult[]) {
-  if (results.length === 0) {
-    return {
-      embeds: [
-        new EmbedBuilder()
-          .setColor('#ffcc00')
-          .setDescription('No results found. Try a different title.'),
-      ],
-      components: [],
-    };
-  }
-
-  const embed = new EmbedBuilder()
-    .setColor('#0099ff')
-    .setTitle('TV Show Search Results')
-    .setDescription('Select a show from the dropdown below to request it.');
-
-  const selectMenu = new StringSelectMenuBuilder()
-    .setCustomId('select_tv')
-    .setPlaceholder('Choose a show...')
-    .addOptions(
-      results.slice(0, 25).map((r) =>
-        new StringSelectMenuOptionBuilder()
-          .setLabel(`${r.title} (${r.year})`)
-          .setDescription(`${r.network || 'Unknown Network'} • ${r.seasons?.length || 0} seasons`)
-          .setValue(r.tvdbId.toString())
-      )
-    );
-
-  const row = new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(selectMenu);
-
-  return {
-    embeds: [embed],
-    components: [row],
-  };
-}
-
 export function buildTvApprovalRequestEmbed(show: SonarrSearchResult, requesterDiscordId: string) {
   const embed = new EmbedBuilder()
     .setColor('#ffcc00')
@@ -224,6 +150,120 @@ export function buildTvRejectedEmbed(show: TvRequest, approverDiscordId: string)
   if (show.poster_url) embed.setThumbnail(show.poster_url);
 
   return { embeds: [embed], components: [] };
+}
+
+// ============================================================================
+// CAROUSEL MESSAGES
+// ============================================================================
+
+export function buildMovieCarouselPage(
+  results: RadarrSearchResult[],
+  currentIndex: number
+): { embeds: EmbedBuilder[]; components: ActionRowBuilder<ButtonBuilder>[] } {
+  if (results.length === 0) {
+    return {
+      embeds: [
+        new EmbedBuilder()
+          .setColor('#ffcc00')
+          .setDescription('No results found. Try a different title.'),
+      ],
+      components: [],
+    };
+  }
+
+  const movie = results[currentIndex]!;
+
+  const embed = new EmbedBuilder()
+    .setColor('#0099ff')
+    .setTitle(`${movie.title} (${movie.year})`)
+    .setDescription(movie.overview?.substring(0, 1024) ?? 'No overview available.')
+    .addFields(
+      { name: 'Studio', value: movie.studio ?? 'Unknown', inline: true },
+      { name: 'TMDB ID', value: movie.tmdbId.toString(), inline: true }
+    )
+    .setFooter({ text: `Result ${currentIndex + 1} of ${results.length}` });
+
+  const posterUrl = getMoviePosterUrl(movie);
+  if (posterUrl !== null) {
+    embed.setThumbnail(posterUrl);
+  }
+
+  const prevBtn = new ButtonBuilder()
+    .setCustomId(`movie_prev_${currentIndex}`)
+    .setLabel('◀ Previous')
+    .setStyle(ButtonStyle.Secondary)
+    .setDisabled(currentIndex === 0);
+
+  const nextBtn = new ButtonBuilder()
+    .setCustomId(`movie_next_${currentIndex}`)
+    .setLabel('Next ▶')
+    .setStyle(ButtonStyle.Secondary)
+    .setDisabled(currentIndex === results.length - 1);
+
+  const selectBtn = new ButtonBuilder()
+    .setCustomId(`movie_request_${currentIndex}`)
+    .setLabel('Request This')
+    .setStyle(ButtonStyle.Success);
+
+  const row = new ActionRowBuilder<ButtonBuilder>().addComponents(prevBtn, nextBtn, selectBtn);
+
+  return { embeds: [embed], components: [row] };
+}
+
+export function buildTvCarouselPage(
+  results: SonarrSearchResult[],
+  currentIndex: number
+): { embeds: EmbedBuilder[]; components: ActionRowBuilder<ButtonBuilder>[] } {
+  if (results.length === 0) {
+    return {
+      embeds: [
+        new EmbedBuilder()
+          .setColor('#ffcc00')
+          .setDescription('No results found. Try a different title.'),
+      ],
+      components: [],
+    };
+  }
+
+  const show = results[currentIndex]!;
+  const seasonCount = show.seasons.filter((s) => s.seasonNumber > 0).length;
+
+  const embed = new EmbedBuilder()
+    .setColor('#0099ff')
+    .setTitle(`${show.title} (${show.year})`)
+    .setDescription(show.overview?.substring(0, 1024) ?? 'No overview available.')
+    .addFields(
+      { name: 'Network', value: show.network ?? 'Unknown', inline: true },
+      { name: 'Seasons', value: seasonCount.toString(), inline: true },
+      { name: 'TVDB ID', value: show.tvdbId.toString(), inline: true }
+    )
+    .setFooter({ text: `Result ${currentIndex + 1} of ${results.length}` });
+
+  const posterUrl = getTvPosterUrl(show);
+  if (posterUrl !== null) {
+    embed.setThumbnail(posterUrl);
+  }
+
+  const prevBtn = new ButtonBuilder()
+    .setCustomId(`tv_prev_${currentIndex}`)
+    .setLabel('◀ Previous')
+    .setStyle(ButtonStyle.Secondary)
+    .setDisabled(currentIndex === 0);
+
+  const nextBtn = new ButtonBuilder()
+    .setCustomId(`tv_next_${currentIndex}`)
+    .setLabel('Next ▶')
+    .setStyle(ButtonStyle.Secondary)
+    .setDisabled(currentIndex === results.length - 1);
+
+  const selectBtn = new ButtonBuilder()
+    .setCustomId(`tv_request_${currentIndex}`)
+    .setLabel('Request This')
+    .setStyle(ButtonStyle.Success);
+
+  const row = new ActionRowBuilder<ButtonBuilder>().addComponents(prevBtn, nextBtn, selectBtn);
+
+  return { embeds: [embed], components: [row] };
 }
 
 // ============================================================================

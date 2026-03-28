@@ -47,7 +47,7 @@ describe('/tv command (Discord)', () => {
 
   test('responds with search results when Sonarr finds shows', async () => {
     mockSonarrClient.searchSeries.mockResolvedValue([
-      { title: 'Breaking Bad', year: 2008, tvdbId: 81189, seasons: [] },
+      { title: 'Breaking Bad', year: 2008, tvdbId: 81189, seasons: [{ seasonNumber: 1 }], images: [], network: 'AMC' },
     ]);
     
     await executeTvCommand(mockInteraction, { sonarr: { sonarrClient: mockSonarrClient as unknown as SonarrClient } });

@@ -17,7 +17,7 @@ export function registerSelectTvAction(app: App, deps: SelectTvDeps): void {
     await ack();
 
     const action = (body as any).actions[0];
-    const tvdbId = parseInt(action.selected_option.value, 10);
+    const tvdbId = parseInt(action.value, 10);
     const userId = body.user.id;
 
     try {
