@@ -4,6 +4,7 @@ import type { SonarrClient } from '../../sonarr/client';
 import { getResults, clearResults, getTvResults, clearTvResults } from '../../core/searchCache';
 import { createRequest, createTvRequest, getRequestByTmdbId, getTvRequestByTvdbId } from '../../db/index';
 import { buildApprovalRequestEmbed, buildTvApprovalRequestEmbed } from '../messages/index';
+import { getMoviePosterUrl, getTvPosterUrl } from '../../core/helpers/posterUrl';
 import { createLogger } from '../../logger';
 
 const log = createLogger('discord-select-actions');
@@ -55,7 +56,7 @@ export async function handleSelectMovie(
           tmdb_id: movie.tmdbId,
           imdb_id: movie.imdbId,
           year: movie.year,
-          poster_url: movie.remotePoster,
+          poster_url: getMoviePosterUrl(movie),
           requester_slack_id: userId,
           platform: 'discord',
         });
@@ -86,7 +87,7 @@ export async function handleSelectMovie(
       tmdb_id: movie.tmdbId,
       imdb_id: movie.imdbId,
       year: movie.year,
-      poster_url: movie.remotePoster,
+      poster_url: getMoviePosterUrl(movie),
       requester_slack_id: userId,
       slack_message_ts: sentMsg.id, // Reusing slack_message_ts for Discord Message ID
       platform: 'discord',
@@ -169,7 +170,7 @@ export async function handleSelectTv(
       show_title: show.title,
       tvdb_id: show.tvdbId,
       year: show.year,
-      poster_url: show.images?.find((img) => img.coverType === 'poster')?.remoteUrl,
+      poster_url: getTvPosterUrl(show),
       requester_slack_id: userId,
       slack_message_ts: sentMsg.id, // Reusing field for Message ID
       platform: 'discord',

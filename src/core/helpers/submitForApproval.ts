@@ -4,6 +4,7 @@ import type { SonarrSearchResult } from '../../sonarr/types';
 import type { SonarrClient } from '../../sonarr/client';
 import { createRequest, updateRequestStatus, createTvRequest, updateTvRequestStatus } from '../../db/index';
 import { buildApprovalRequestMessage, buildTvApprovalRequestMessage } from '../../slack/messages/index';
+import { getMoviePosterUrl, getTvPosterUrl } from './posterUrl';
 import { createLogger } from '../../logger';
 
 const log = createLogger('submit');
@@ -39,7 +40,7 @@ export async function submitMovieForApproval(params: SubmitForApprovalParams): P
     tmdb_id: movie.tmdbId,
     imdb_id: movie.imdbId,
     year: movie.year,
-    poster_url: movie.remotePoster,
+    poster_url: getMoviePosterUrl(movie),
     requester_slack_id: userId,
   });
 
@@ -51,7 +52,7 @@ export async function submitMovieForApproval(params: SubmitForApprovalParams): P
           title: movie.title,
           year: movie.year,
           tmdbId: movie.tmdbId,
-          posterUrl: movie.remotePoster ?? null,
+          posterUrl: getMoviePosterUrl(movie),
           overview: movie.overview,
         },
         userId,
@@ -104,8 +105,7 @@ export async function submitTvForApproval(params: SubmitTvForApprovalParams): Pr
     return { success: false, alreadyExists: true };
   }
 
-  const posterImage = show.images.find(img => img.coverType === 'poster');
-  const posterUrl = posterImage?.remoteUrl ?? null;
+  const posterUrl = getTvPosterUrl(show);
 
   const request = createTvRequest({
     show_title: show.title,
