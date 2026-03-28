@@ -54,4 +54,9 @@ export type ImageBlock = {
   alt_text: string;
 };
 
-export type Block = SectionBlock | ActionsBlock | DividerBlock | ImageBlock;
+export type ContextBlock = {
+  type: 'context';
+  elements: TextObject[];
+};
+
+export type Block = SectionBlock | ActionsBlock | DividerBlock | ImageBlock | ContextBlock;

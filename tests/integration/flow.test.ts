@@ -73,8 +73,8 @@ function mockCommandPayload(text: string, userId = REQUESTER_ID) {
 }
 
 function mockActionPayload(actionId: string, value: string, userId = APPROVER_ID, client = createMockClient()) {
-  const isSelect = actionId === ACTION_IDS.SELECT_MOVIE || actionId === ACTION_IDS.SELECT_TV;
-  const actions: any[] = isSelect
+  const isSelectTv = actionId === ACTION_IDS.SELECT_TV;
+  const actions: any[] = isSelectTv
     ? [{ action_id: actionId, selected_option: { value } }]
     : [{ action_id: actionId, value }];
   return {

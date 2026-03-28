@@ -17,7 +17,7 @@ export function registerSelectMovieAction(app: App, deps: SelectMovieDeps): void
     await ack();
 
     const action = (body as any).actions[0];
-    const tmdbId = parseInt(action.selected_option.value, 10);
+    const tmdbId = parseInt(action.value, 10);
     const userId = body.user.id;
 
     try {

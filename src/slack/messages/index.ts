@@ -1,6 +1,7 @@
-import type { Block, StaticSelectOption } from './types';
+import type { Block, StaticSelectOption, ImageElement } from './types';
 import type { RadarrSearchResult } from '../../radarr/types';
 import type { SonarrSearchResult } from '../../sonarr/types';
+import { getMoviePosterUrl, getTvPosterUrl } from '../../core/helpers/posterUrl';
 
 export const ACTION_IDS = {
   SELECT_MOVIE: 'select_movie',
@@ -31,42 +32,54 @@ export function buildSearchResultsMessage(movies: RadarrSearchResult[]): Block[]
     ];
   }
 
-  const options: StaticSelectOption[] = movies.slice(0, 25).map((movie) => ({
-    text: {
-      type: 'plain_text' as const,
-      text: `${movie.title} (${movie.year})`,
-      emoji: true,
-    },
-    // Use only tmdbId as value — Slack's static_select value max is 150 chars.
-    // The action handler looks up the full movie data from the in-memory search cache.
-    value: String(movie.tmdbId),
-  }));
+  const capped = movies.slice(0, 5);
+  const blocks: Block[] = [];
 
-  return [
-    {
+  if (movies.length > 5) {
+    blocks.push({
+      type: 'context',
+      elements: [{ type: 'mrkdwn', text: `:clapper: Showing 5 of ${movies.length} results` }],
+    });
+  }
+
+  for (const movie of capped) {
+    const posterUrl = getMoviePosterUrl(movie);
+    const overview = movie.overview
+      ? movie.overview.length > 300
+        ? `${movie.overview.slice(0, 300)}...`
+        : movie.overview
+      : '';
+    const text = overview
+      ? `*${movie.title} (${movie.year})*\n${overview}`
+      : `*${movie.title} (${movie.year})*`;
+
+    const section: Block = {
       type: 'section',
-      text: {
-        type: 'mrkdwn',
-        text: ':clapper: *Select the movie you want to request:*',
-      },
-    },
-    {
+      text: { type: 'mrkdwn', text },
+      ...(posterUrl ? {
+        accessory: {
+          type: 'image',
+          image_url: posterUrl,
+          alt_text: `${movie.title} poster`,
+        } satisfies ImageElement,
+      } : {}),
+    };
+    blocks.push(section);
+
+    blocks.push({
       type: 'actions',
-      block_id: BLOCK_IDS.MOVIE_SELECT_ACTIONS,
       elements: [
         {
-          type: 'static_select',
-          placeholder: {
-            type: 'plain_text',
-            text: 'Choose a movie...',
-            emoji: true,
-          },
+          type: 'button',
+          text: { type: 'plain_text', text: 'Request', emoji: true },
           action_id: ACTION_IDS.SELECT_MOVIE,
-          options,
+          value: String(movie.tmdbId),
         },
       ],
-    },
-  ];
+    });
+  }
+
+  return blocks;
 }
 
 export function buildApprovalRequestMessage(

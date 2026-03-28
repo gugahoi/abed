@@ -17,7 +17,7 @@ function mockActionPayload(tmdbIdStr: string, userId = 'U_TEST') {
   return {
     body: {
       user: { id: userId },
-      actions: [{ action_id: ACTION_IDS.SELECT_MOVIE, selected_option: { value: tmdbIdStr } }],
+      actions: [{ action_id: ACTION_IDS.SELECT_MOVIE, value: tmdbIdStr }],
     },
     ack: mock(async () => {}),
     respond: mock(async (_: any) => {}),

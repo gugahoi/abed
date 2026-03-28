@@ -34,38 +34,77 @@ describe('buildSearchResultsMessage', () => {
     expect(blocks[0]).toMatchObject({ type: 'section' });
   });
 
-  it('returns section + actions blocks for search results', () => {
+  it('returns section + actions blocks per result', () => {
     const blocks = buildSearchResultsMessage([mockMovie]);
     expect(blocks).toHaveLength(2);
     expect(blocks[0]!.type).toBe('section');
     expect(blocks[1]!.type).toBe('actions');
   });
 
-  it('actions block has static_select element', () => {
+  it('each result has a Request button with tmdbId value', () => {
     const blocks = buildSearchResultsMessage([mockMovie]);
     const actionsBlock = blocks[1] as any;
-    expect(actionsBlock.block_id).toBe(BLOCK_IDS.MOVIE_SELECT_ACTIONS);
-    expect(actionsBlock.elements[0].type).toBe('static_select');
+    expect(actionsBlock.elements[0].type).toBe('button');
     expect(actionsBlock.elements[0].action_id).toBe(ACTION_IDS.SELECT_MOVIE);
+    expect(actionsBlock.elements[0].value).toBe('12345');
   });
 
-  it('uses tmdbId string as option value (stays within Slack 150-char limit)', () => {
+  it('shows poster as section accessory when available', () => {
     const blocks = buildSearchResultsMessage([mockMovie]);
-    const actionsBlock = blocks[1] as any;
-    const optionValue = actionsBlock.elements[0].options[0].value;
-    expect(optionValue).toBe('12345');
-    expect(optionValue.length).toBeLessThanOrEqual(150);
+    const section = blocks[0] as any;
+    expect(section.accessory).toBeDefined();
+    expect(section.accessory.type).toBe('image');
+    expect(section.accessory.image_url).toBe('https://example.com/poster.jpg');
   });
 
-  it('limits options to 25 movies', () => {
+  it('omits accessory when no poster available', () => {
+    const noPosterMovie = { ...mockMovie, remotePoster: undefined, images: [] };
+    const blocks = buildSearchResultsMessage([noPosterMovie]);
+    const section = blocks[0] as any;
+    expect(section.accessory).toBeUndefined();
+  });
+
+  it('includes title and year in section text', () => {
+    const blocks = buildSearchResultsMessage([mockMovie]);
+    const section = blocks[0] as any;
+    expect(section.text.text).toContain('The Batman');
+    expect(section.text.text).toContain('2022');
+  });
+
+  it('truncates overview to 300 chars', () => {
+    const longOverview = 'A'.repeat(400);
+    const longMovie = { ...mockMovie, overview: longOverview };
+    const blocks = buildSearchResultsMessage([longMovie]);
+    const section = blocks[0] as any;
+    expect(section.text.text).toContain('A'.repeat(300) + '...');
+    expect(section.text.text).not.toContain('A'.repeat(301));
+  });
+
+  it('limits results to 5 movies', () => {
     const manyMovies = Array.from({ length: 30 }, (_, i) => ({
       ...mockMovie,
       tmdbId: i + 1,
       title: `Movie ${i + 1}`,
     }));
     const blocks = buildSearchResultsMessage(manyMovies);
-    const actionsBlock = blocks[1] as any;
-    expect(actionsBlock.elements[0].options).toHaveLength(25);
+    const actionBlocks = blocks.filter(b => b.type === 'actions');
+    expect(actionBlocks).toHaveLength(5);
+  });
+
+  it('shows context header when more results than displayed', () => {
+    const manyMovies = Array.from({ length: 10 }, (_, i) => ({
+      ...mockMovie,
+      tmdbId: i + 1,
+      title: `Movie ${i + 1}`,
+    }));
+    const blocks = buildSearchResultsMessage(manyMovies);
+    expect(blocks[0]!.type).toBe('context');
+    expect((blocks[0] as any).elements[0].text).toContain('Showing 5 of 10');
+  });
+
+  it('does not show context header when 5 or fewer results', () => {
+    const blocks = buildSearchResultsMessage([mockMovie]);
+    expect(blocks[0]!.type).toBe('section');
   });
 });
 
