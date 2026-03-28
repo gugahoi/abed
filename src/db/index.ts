@@ -176,6 +176,18 @@ export function getRequestsByUserId(slackId: string, status?: RequestStatus): Mo
   ).all(slackId);
 }
 
+export function getAllRequests(status?: RequestStatus): MovieRequest[] {
+  const db = getDb();
+  if (status) {
+    return db.prepare<MovieRequest, [string]>(
+      'SELECT * FROM requests WHERE status = ? ORDER BY created_at DESC LIMIT 25',
+    ).all(status);
+  }
+  return db.prepare<MovieRequest, []>(
+    'SELECT * FROM requests ORDER BY created_at DESC LIMIT 25',
+  ).all();
+}
+
 export function updateRequestStatus(input: UpdateRequestStatusInput): MovieRequest {
   const db = getDb();
   const setClauses = ['status = ?', "updated_at = datetime('now')"];
@@ -244,6 +256,18 @@ export function getTvRequestsByUserId(slackId: string, status?: RequestStatus): 
   return db.prepare<TvRequest, [string]>(
     'SELECT * FROM tv_requests WHERE requester_slack_id = ? ORDER BY created_at DESC LIMIT 15',
   ).all(slackId);
+}
+
+export function getAllTvRequests(status?: RequestStatus): TvRequest[] {
+  const db = getDb();
+  if (status) {
+    return db.prepare<TvRequest, [string]>(
+      'SELECT * FROM tv_requests WHERE status = ? ORDER BY created_at DESC LIMIT 25',
+    ).all(status);
+  }
+  return db.prepare<TvRequest, []>(
+    'SELECT * FROM tv_requests ORDER BY created_at DESC LIMIT 25',
+  ).all();
 }
 
 export function updateTvRequestStatus(input: UpdateTvRequestStatusInput): TvRequest {
