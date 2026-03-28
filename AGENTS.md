@@ -13,7 +13,7 @@ abed/
 ├── src/
 │   ├── index.ts                     # Entry point: config → healthchecks → DB init → Slack/Discord start → poller start + graceful shutdown
 │   ├── logger.ts                    # Structured logger: createLogger(prefix), log levels via LOG_LEVEL env, secret redaction via _setSecrets()
-│   ├── poller.ts                    # Download status poller: 15min interval, checks Radarr/Sonarr for completed downloads → DMs requester via Slack
+│   ├── poller.ts                    # Download status poller: 15min interval, checks Radarr/Sonarr for completed downloads → DMs requester via Slack or Discord
 │   ├── config/
 │   │   └── index.ts                 # Env var parser — singleton with _resetConfig() for tests. Sections: slack | null, discord | null, radarr, sonarr | null
 │   ├── core/
@@ -30,11 +30,12 @@ abed/
 │   │   ├── client.ts                # SonarrClient class — fetch wrapper for /api/v3/* (searchSeries, addSeries, seriesExists, getSeriesByTvdbId, quality profiles, root folders)
 │   │   └── types.ts                 # SonarrSearchResult, SonarrSeries, AddSeriesPayload, SonarrQualityProfile, SonarrRootFolder
 │   ├── slack/
-│   │   ├── index.ts                 # createSlackApp() — wires all Slack handlers (movie + TV + myrequests) to App instance
+│   │   ├── index.ts                 # createSlackApp() — wires all Slack handlers (movie + TV + myrequests + queue) to App instance
 │   │   ├── commands/
 │   │   │   ├── movie.ts             # /movie command — search Radarr + cache + respond with dropdown
 │   │   │   ├── tv.ts                # /tv command — search Sonarr + cache + respond with dropdown (shows "not configured" if Sonarr is null)
-│   │   │   └── myrequests.ts        # /myrequests command — query both movie + TV requests, optional status filter
+│   │   │   ├── myrequests.ts        # /myrequests command — query both movie + TV requests, optional status filter
+│   │   │   └── queue.ts             # /queue command — server-wide request queue, optional status filter
 │   │   ├── actions/
 │   │   │   ├── selectMovie.ts       # Dropdown selection → uses submitMovieForApproval helper
 │   │   │   ├── approveMovie.ts      # Approve button → auth check → re-search Radarr → addMovie → update msg → DM requester
@@ -50,7 +51,8 @@ abed/
 │       ├── commands/
 │       │   ├── movie.ts             # Discord /movie — SlashCommandBuilder def + executeMovieCommand handler
 │       │   ├── tv.ts                # Discord /tv — SlashCommandBuilder def + executeTvCommand handler
-│       │   └── myrequests.ts        # Discord /myrequests — SlashCommandBuilder def + executeMyRequestsCommand handler
+│       │   ├── myrequests.ts        # Discord /myrequests — SlashCommandBuilder def + executeMyRequestsCommand handler
+│       │   └── queue.ts             # Discord /queue — SlashCommandBuilder def + executeQueueCommand handler
 │       ├── actions/
 │       │   ├── select.ts            # handleSelectMovie + handleSelectTv — select menu interaction handlers
 │       │   ├── approveMovie.ts      # handleApproveMovie + handleRejectMovie — button interaction handlers for movies
@@ -60,17 +62,18 @@ abed/
 ├── tests/                           # Mirrors src/ — bun:test with mock() helpers
 │   ├── config.test.ts
 │   ├── logger.test.ts
+│   ├── poller.test.ts
 │   ├── db/index.test.ts
 │   ├── radarr/client.test.ts
 │   ├── sonarr/client.test.ts
 │   ├── core/helpers/submitForApproval.test.ts
 │   ├── slack/
 │   │   ├── messages.test.ts
-│   │   ├── commands/{movie,tv,myrequests}.test.ts
+│   │   ├── commands/{movie,tv,myrequests,queue}.test.ts
 │   │   └── actions/{selectMovie,approveMovie,rejectMovie,selectTv,approveTv,rejectTv}.test.ts
 │   ├── discord/
 │   │   ├── messages.test.ts
-│   │   ├── commands/{movie,tv,myrequests}.test.ts
+│   │   ├── commands/{movie,tv,myrequests,queue}.test.ts
 │   │   └── actions/{select,approveMovie,approveTv}.test.ts
 │   └── integration/flow.test.ts     # Full flow: command → select → approve/reject (Slack)
 ├── data/                            # SQLite DB files (gitignored)
@@ -96,7 +99,7 @@ abed/
 | Add env var | `src/config/index.ts` + `.env.example` | Use `required()` helper. Platform sections are all-or-none |
 | Add a new platform | Create `src/<platform>/` with `commands/`, `actions/`, `messages/` + hook into `src/index.ts` | Follow Slack/Discord patterns. Add startup + shutdown. Update `Platform` type in `src/db/types.ts` |
 | Change logging behavior | `src/logger.ts` | `createLogger(prefix)`, secret redaction, level via `LOG_LEVEL` env |
-| Change download notifications | `src/poller.ts` | Polls Radarr/Sonarr on 15min interval, DMs via Slack when downloaded |
+| Change download notifications | `src/poller.ts` | Polls Radarr/Sonarr on 15min interval, DMs via Slack or Discord when downloaded |
 | Understand data flow | `tests/integration/flow.test.ts` | Shows full Slack command → approval cycle |
 | Understand shared Slack approval logic | `src/core/helpers/submitForApproval.ts` | Used by Slack select handlers. Discord handles approval posting directly in action handlers |
 
@@ -153,7 +156,7 @@ docker compose logs -f abed       # Tail logs
 - **not_in_channel auto-join** (Slack only): `submitForApproval` catches Slack's `not_in_channel` error and auto-joins the approval channel before retrying. Discord fetches the channel directly and has no equivalent auto-join.
 - **Race condition guard**: Both Slack and Discord approve/reject handlers silently return (deferUpdate on Discord) if `request.status !== 'pending'` — prevents double-processing when two approvers click simultaneously.
 - **Duplicate detection**: Pre-submission checks call `radarrClient.movieExists()` / `sonarrClient.seriesExists()` in both Slack and Discord flows. DB does not enforce uniqueness on `tmdb_id`/`tvdb_id` — multiple request rows can exist; `getRequestByTmdbId` returns the most recent.
-- **Download poller**: `src/poller.ts` runs on a 15-minute interval. Checks Radarr for `hasFile` on approved movies and Sonarr for `episodeFileCount > 0` on approved TV shows. Sends DM notification and marks `downloaded_notified = 1`. **Currently Slack-only** — Discord requesters do not receive download notifications yet.
+- **Download poller**: `src/poller.ts` runs on a 15-minute interval. Checks Radarr for `hasFile` on approved movies and Sonarr for `episodeFileCount > 0` on approved TV shows. Sends DM notification via Slack or Discord (based on `request.platform`) and marks `downloaded_notified = 1`.
 - **`DB_PATH` default**: `./data/requests.db` locally, overridden to `/app/data/requests.db` via docker-compose env.
 - **Migration pattern**: Schema uses `CREATE TABLE IF NOT EXISTS` for initial setup. Additive column changes use manual migration functions (`migrateDownloadedNotified`, `migratePlatform`) that check `PRAGMA table_info` before `ALTER TABLE`. Destructive schema changes require manual DB handling.
 - **PUID/PGID support**: `docker-entrypoint.sh` adjusts the `abed` user's UID/GID to match `PUID`/`PGID` env vars (defaults to 1001:1001). Handles conflicts with existing UIDs/GIDs on the system.
