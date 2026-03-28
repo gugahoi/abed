@@ -26,10 +26,16 @@ export type StaticSelectElement = {
   options: StaticSelectOption[];
 };
 
+export type ImageElement = {
+  type: 'image';
+  image_url: string;
+  alt_text: string;
+};
+
 export type SectionBlock = {
   type: 'section';
   text: TextObject;
-  accessory?: ButtonElement | StaticSelectElement;
+  accessory?: ButtonElement | StaticSelectElement | ImageElement;
 };
 
 export type ActionsBlock = {
