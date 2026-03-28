@@ -8,6 +8,7 @@ import { createLogger } from '../logger';
 import { executeMovieCommand, movieCommandDef } from './commands/movie';
 import { executeTvCommand, tvCommandDef } from './commands/tv';
 import { executeMyRequestsCommand, myRequestsCommandDef } from './commands/myrequests';
+import { executeQueueCommand, queueCommandDef } from './commands/queue';
 
 // Actions
 import { handleApproveMovie, handleRejectMovie } from './actions/approveMovie';
@@ -37,7 +38,7 @@ export async function createDiscordApp(deps: DiscordAppDeps, radarrClient: Radar
     intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages],
   });
 
-  const commands = [movieCommandDef, myRequestsCommandDef];
+  const commands = [movieCommandDef, myRequestsCommandDef, queueCommandDef];
   if (deps.sonarr) {
     commands.push(tvCommandDef);
   }
@@ -81,6 +82,8 @@ export async function createDiscordApp(deps: DiscordAppDeps, radarrClient: Radar
           await executeTvCommand(interaction, { sonarr: deps.sonarr });
         } else if (commandName === 'myrequests') {
           await executeMyRequestsCommand(interaction);
+        } else if (commandName === 'queue') {
+          await executeQueueCommand(interaction);
         }
       } else if (interaction.isButton()) {
         if (interaction.customId.startsWith('movie_prev_') || interaction.customId.startsWith('movie_next_')) {

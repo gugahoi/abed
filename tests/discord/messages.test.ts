@@ -7,6 +7,7 @@ import {
   buildTvApprovedEmbed,
   buildTvRejectedEmbed,
   buildMyRequestsEmbed,
+  buildQueueEmbed,
   buildMovieCarouselPage,
   buildTvCarouselPage,
 } from '../../src/discord/messages/index';
@@ -263,5 +264,84 @@ describe('Discord Message Builders', () => {
       expect(result.embeds[0]!.data.description).toInclude('No results found');
       expect(result.components.length).toBe(0);
     });
+  });
+});
+
+describe('buildQueueEmbed', () => {
+  const movieReq: MovieRequest = {
+    id: 1,
+    movie_title: 'Inception',
+    year: 2010,
+    tmdb_id: 27205,
+    requester_slack_id: 'U_MOVIE',
+    status: 'pending',
+    created_at: '2024-01-01T00:00:00',
+    updated_at: '',
+    poster_url: null,
+    imdb_id: null,
+    approver_slack_id: null,
+    slack_message_ts: null,
+    downloaded_notified: 0,
+    platform: 'discord',
+  };
+
+  const tvReq: TvRequest = {
+    id: 2,
+    show_title: 'Breaking Bad',
+    year: 2008,
+    tvdb_id: 81189,
+    requester_slack_id: 'U_TV',
+    status: 'approved',
+    created_at: '2024-01-02T00:00:00',
+    updated_at: '',
+    poster_url: null,
+    approver_slack_id: null,
+    slack_message_ts: null,
+    downloaded_notified: 0,
+    platform: 'discord',
+  };
+
+  test('returns no-requests-found embed when empty array', () => {
+    const result = buildQueueEmbed([]);
+    expect(result.embeds[0]!.data.description).toInclude('No requests found');
+  });
+
+  test('includes statusFilter in empty-state description when provided', () => {
+    const result = buildQueueEmbed([], 'pending');
+    expect(result.embeds[0]!.data.description).toInclude('pending');
+  });
+
+  test('returns embed with fields for each request', () => {
+    const result = buildQueueEmbed([movieReq]);
+    expect(result.embeds[0]!.data.fields?.length).toBe(1);
+  });
+
+  test('fields include requester mention', () => {
+    const result = buildQueueEmbed([movieReq]);
+    const fieldValue = result.embeds[0]!.data.fields![0]!.value;
+    expect(fieldValue).toInclude('<@U_MOVIE>');
+  });
+
+  test('shows statusFilter in title when provided', () => {
+    const result = buildQueueEmbed([movieReq], 'pending');
+    expect(result.embeds[0]!.data.title).toInclude('pending');
+  });
+
+  test('includes both movie and TV request fields', () => {
+    const result = buildQueueEmbed([movieReq, tvReq]);
+    const fieldNames = result.embeds[0]!.data.fields!.map((f) => f.name).join('\n');
+    expect(fieldNames).toInclude('Inception');
+    expect(fieldNames).toInclude('Breaking Bad');
+    expect(result.embeds[0]!.data.fields?.length).toBe(2);
+  });
+
+  test('movie fields use 🎬 icon', () => {
+    const result = buildQueueEmbed([movieReq]);
+    expect(result.embeds[0]!.data.fields![0]!.name).toInclude('🎬');
+  });
+
+  test('TV fields use 📺 icon', () => {
+    const result = buildQueueEmbed([tvReq]);
+    expect(result.embeds[0]!.data.fields![0]!.name).toInclude('📺');
   });
 });

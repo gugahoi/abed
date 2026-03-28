@@ -306,3 +306,42 @@ export function buildMyRequestsEmbed(requests: (MovieRequest | TvRequest)[]) {
 
   return { embeds: [embed] };
 }
+
+export function buildQueueEmbed(requests: (MovieRequest | TvRequest)[], statusFilter?: string) {
+  if (requests.length === 0) {
+    const filterNote = statusFilter ? ` with status **${statusFilter}**` : '';
+    return {
+      embeds: [
+        new EmbedBuilder()
+          .setColor('#cccccc')
+          .setDescription(`No requests found${filterNote}.`),
+      ],
+    };
+  }
+
+  const filterNote = statusFilter ? ` — ${statusFilter}` : '';
+  const embed = new EmbedBuilder()
+    .setColor('#0099ff')
+    .setTitle(`Request Queue${filterNote} (${requests.length})`)
+    .setDescription('Most recent requests across the server:');
+
+  requests.forEach((req) => {
+    const isMovie = 'movie_title' in req;
+    const title = isMovie ? req.movie_title : req.show_title;
+    const icon = isMovie ? '🎬' : '📺';
+
+    let statusIcon = '⏳';
+    if (req.status === 'approved') statusIcon = '✅';
+    if (req.status === 'rejected') statusIcon = '❌';
+    if (req.status === 'already_exists') statusIcon = '📚';
+    if (req.status === 'failed') statusIcon = '⚠️';
+
+    embed.addFields({
+      name: `${icon} ${title} (${req.year})`,
+      value: `Status: ${statusIcon} ${req.status}\nRequested by: <@${req.requester_slack_id}>\nDate: ${new Date(req.created_at).toLocaleDateString()}`,
+      inline: false,
+    });
+  });
+
+  return { embeds: [embed] };
+}
