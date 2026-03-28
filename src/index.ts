@@ -109,7 +109,8 @@ async function main(): Promise<void> {
   }
 
   startPoller({
-    slackClient: slackApp?.client ?? null as any, // Will need to update poller to handle Discord too
+    slackClient: slackApp?.client ?? null,
+    discordClient: discordApp ?? null,
     radarrClient,
     sonarrClient: sonarrConfig?.sonarrClient ?? null,
   });
