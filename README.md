@@ -22,6 +22,7 @@ A Slack and Discord bot that lets users request movies and TV shows directly fro
 - Approval workflow with a dedicated channel and Approve/Reject buttons (shared for movies and TV shows)
 - Permission-based approvals — only users listed in `APPROVER_SLACK_IDS` can approve requests
 - `/myrequests [status]` slash command to view your own request history (movies and TV shows), with optional status filter
+- `/queue [status]` slash command to view the server-wide request queue, with optional status filter
 - Duplicate detection — skips adding a movie or TV show if it already exists in the library
 - Persistent request tracking via SQLite
 - Docker-deployable alongside Radarr/Sonarr on a NAS
@@ -144,6 +145,12 @@ User → /tv <title>
    - **Short Description**: `View your requests`
    - **Usage Hint**: `[pending | approved | rejected | already_exists | failed]`
 7. Click **Save**
+8. Create the `/queue` command:
+   - **Command**: `/queue`
+   - **Request URL**: any URL (e.g. `https://example.com`) — Socket Mode ignores it
+   - **Short Description**: `View the request queue`
+   - **Usage Hint**: `[pending | approved | rejected | already_exists | failed]`
+9. Click **Save**
 
 ### 5. Enable Interactivity
 
@@ -419,6 +426,14 @@ bun run typecheck
 
 > **Optional status filter:** Users can type `/myrequests pending` (or `approved`, `rejected`, `already_exists`, `failed`) to filter results by status. If omitted, all statuses are shown.
 
+### Viewing the Request Queue
+
+1. **User types `/queue`** in any channel
+2. **Bot queries the SQLite database** for all movie and TV requests across all users, sorted newest-first (up to 25 results)
+3. **Bot responds ephemerally** (visible only to the user) with each request showing title, type (movie/TV), status, and who requested it
+
+> **Optional status filter:** Users can type `/queue pending` (or `approved`, `rejected`, `already_exists`, `failed`) to filter results by status. If omitted, all statuses are shown.
+
 ---
 
 ## Troubleshooting
@@ -434,4 +449,5 @@ bun run typecheck
 | Container can't reach Radarr or Sonarr | Using `localhost` for `RADARR_URL` or `SONARR_URL` | Use the host machine's LAN IP (e.g. `http://192.168.1.100:7878`), not `localhost` — containers don't share the host's localhost |
 | Approval buttons do nothing | Interactivity not enabled in Slack app | Go to **Interactivity & Shortcuts** in the Slack app settings and make sure Interactivity is toggled ON (any request URL works with Socket Mode) |
 | Bot doesn't respond to `/myrequests` | `/myrequests` slash command not created in Slack app | Go to **Slash Commands** in the Slack app settings and create the `/myrequests` command (see [Slack App Setup](#4-create-the-slash-commands)) |
+| Bot doesn't respond to `/queue` | `/queue` slash command not created in Slack app | Go to **Slash Commands** in the Slack app settings and create the `/queue` command (see [Slack App Setup](#4-create-the-slash-commands)) |
 | SQLite errors or data not persisting between restarts | Volume not mounted or `./data` directory not writable | Ensure the `./data:/app/data` volume binding is in `docker-compose.yml` and that `./data` exists and is writable on the host |
